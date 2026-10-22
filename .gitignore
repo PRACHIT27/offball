@@ -1,0 +1,42 @@
+# Secrets: never commit. This repo is public.
+.env
+.env.local
+*.pem
+*.key
+*.pfx
+local.settings.json
+
+# Azure
+.azure/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Generated match files and local feeds (sample match in fixtures/ is committed)
+out/
+local_feeds/
+*.parquet
+!fixtures/**/*.parquet
+
+# Node / frontend
+node_modules/
+dist/
+build/
+.vite/
+playwright-report/
+test-results/
+
+# Editors / OS
+.vscode/*
+!.vscode/mcp.json
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db

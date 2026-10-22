@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="724" viewBox="0 0 680 724" role="img" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Match Simulation architecture</title>
+<desc>Config files feed a Generate job (config loader, match engine, recorders) that writes match files to Blob matches and the locked answer key to Blob answer-keys. A Stream job (replay streamer, provider emulator, local mode) reads match files and sends two feeds to Event Hubs raw-events and raw-tracking, which go to Data Ingestion.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#73726c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect width="680" height="724" fill="#ffffff"/>
+<g font-size="14">
+<g><rect x="60" y="40" width="150" height="56" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.75"/>
+<text x="135" y="58" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#2C2C2A">Config files</text>
+<text x="135" y="78" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">Storyline, clubs, seed</text></g>
+
+<rect x="40" y="120" width="600" height="134" rx="12" fill="none" stroke="#888780" stroke-width="0.75" stroke-dasharray="5 4"/>
+<text x="620" y="140" text-anchor="end" dominant-baseline="central" font-weight="500" fill="#2C2C2A">Generate job</text>
+<text x="620" y="156" text-anchor="end" dominant-baseline="central" font-size="12" fill="#5F5E5A">Container Apps job</text>
+
+<g><rect x="60" y="168" width="150" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="135" y="186" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Config loader</text>
+<text x="135" y="206" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Pydantic validation</text></g>
+<g><rect x="240" y="168" width="200" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="340" y="186" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Match engine</text>
+<text x="340" y="206" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Tick loop, 25 per second</text></g>
+<g><rect x="470" y="168" width="150" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="545" y="186" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Recorders</text>
+<text x="545" y="206" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Files + answer key</text></g>
+
+<g><rect x="60" y="294" width="250" height="56" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.75"/>
+<text x="185" y="312" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#2C2C2A">Blob: matches/</text>
+<text x="185" y="332" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">Frames, events, pre-match</text></g>
+<g><rect x="370" y="294" width="250" height="56" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.75" stroke-dasharray="4 3"/>
+<text x="495" y="312" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#2C2C2A">Blob: answer-keys/</text>
+<text x="495" y="332" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">Locked, eval tests only</text></g>
+
+<rect x="40" y="380" width="600" height="134" rx="12" fill="none" stroke="#888780" stroke-width="0.75" stroke-dasharray="5 4"/>
+<text x="620" y="400" text-anchor="end" dominant-baseline="central" font-weight="500" fill="#2C2C2A">Stream job</text>
+<text x="620" y="416" text-anchor="end" dominant-baseline="central" font-size="12" fill="#5F5E5A">Container Apps job</text>
+
+<g><rect x="60" y="428" width="180" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.75"/>
+<text x="150" y="446" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#3C3489">Replay streamer</text>
+<text x="150" y="466" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">Any speed, any minute</text></g>
+<g><rect x="280" y="428" width="200" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.75"/>
+<text x="380" y="446" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#3C3489">Provider emulator</text>
+<text x="380" y="466" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">Feed A + B, mess rules</text></g>
+<g><rect x="510" y="428" width="110" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.75"/>
+<text x="565" y="446" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#3C3489">Local mode</text>
+<text x="565" y="466" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">--to-files</text></g>
+
+<g><rect x="150" y="556" width="200" height="56" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.75"/>
+<text x="250" y="574" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#2C2C2A">raw-events</text>
+<text x="250" y="594" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">Event Hubs, feed A</text></g>
+<g><rect x="390" y="556" width="200" height="56" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.75"/>
+<text x="490" y="574" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#2C2C2A">raw-tracking</text>
+<text x="490" y="594" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">Event Hubs, feed B</text></g>
+
+<g><rect x="215" y="650" width="250" height="44" rx="8" fill="none" stroke="#888780" stroke-width="0.75" stroke-dasharray="5 4"/>
+<text x="340" y="672" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#2C2C2A">Data Ingestion (next domain)</text></g>
+</g>
+<g stroke="#73726c" stroke-width="1.5" fill="none" marker-end="url(#arrow)">
+<line x1="135" y1="96" x2="135" y2="166"/>
+<line x1="210" y1="196" x2="238" y2="196"/>
+<line x1="440" y1="196" x2="468" y2="196"/>
+<path d="M500 224 L500 270 L185 270 L185 292"/>
+<line x1="575" y1="224" x2="575" y2="292"/>
+<line x1="145" y1="350" x2="145" y2="426"/>
+<line x1="240" y1="456" x2="278" y2="456"/>
+<line x1="480" y1="456" x2="508" y2="456"/>
+<path d="M310 484 L310 532 L250 532 L250 554"/>
+<line x1="450" y1="484" x2="450" y2="554"/>
+<path d="M250 612 L250 630 L300 630 L300 648"/>
+<path d="M490 612 L490 630 L380 630 L380 648"/>
+</g>
+</svg>

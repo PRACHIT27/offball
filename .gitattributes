@@ -1,0 +1,41 @@
+# We are three people, mostly on Windows with core.autocrlf=true. Without this
+# file git guesses line endings, and two guesses hurt us:
+#
+#  1. Binary match files (Parquet frames, images) get rewritten and stop parsing.
+#  2. .githooks/pre-commit is a shell script. With CRLF endings sh fails and the
+#     VERSION.md hook silently stops working on someone else's machine.
+
+* text=auto
+
+.githooks/*     text eol=lf
+*.sh            text eol=lf
+
+*.py            text eol=lf
+*.md            text eol=lf
+*.json          text eol=lf
+*.jsonl         text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.toml          text eol=lf
+*.txt           text eol=lf
+*.bicep         text eol=lf
+*.ts            text eol=lf
+*.tsx           text eol=lf
+*.css           text eol=lf
+*.html          text eol=lf
+*.svg           text eol=lf
+Dockerfile      text eol=lf
+.env.example    text eol=lf
+
+*.parquet       binary
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.mp4           binary
+*.wav           binary
+*.mp3           binary
+*.ico           binary
+*.zip           binary
+*.woff          binary
+*.woff2         binary
