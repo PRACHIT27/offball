@@ -6,8 +6,8 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v0.3.0`**
-**Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence
+**Doc set version: `v0.4.0`**
+**Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation
 
 ---
 
@@ -35,6 +35,12 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v0.4.0 · 2026-10-23 · Prachit
+**Files:** docs/design/lld-insight-generation.md (new), CLAUDE.md, VERSION.md
+**Type:** MINOR
+- New: Insight Generation design with agent workflow diagram. Coordinator, two tactics agents in parallel, shift explainer, storyteller (4 viewer types × English, Spanish, Hindi), checker with Translator back-check and Content Safety, template fallback, checkpoints. MCP stats server tool list. Ask the studio added.
+- **Action required:** Lane 1 Stats API must serve the MCP tools in §6 with an `as_of` cut-off. Lane 3 reads captions keyed `{viewer_type}.{language}`.
 
 ## v0.3.0 · 2026-10-22 · Prachit
 **Files:** docs/design/lld-tactical-intelligence.md (new), VERSION.md

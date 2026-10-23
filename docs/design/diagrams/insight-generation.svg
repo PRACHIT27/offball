@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="652" viewBox="0 0 680 652" role="img" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Insight Generation agent workflow</title>
+<desc>A trigger wakes the coordinator, which runs two tactics agents in parallel; both get numbers only from the MCP stats server. The shift explainer writes the insight, the storyteller writes captions for four viewer types in three languages, and the checker verifies, back-translates and safety-checks them, with up to two rewrites or a template fallback. Results go on air, are stored in Cosmos, and can be spoken.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#73726c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect width="680" height="652" fill="#ffffff"/>
+<g font-size="14">
+<rect x="240" y="40" width="200" height="56" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.75"/>
+<text x="340" y="58" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#2C2C2A">triggers hub</text>
+<text x="340" y="78" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">From Tactical Intel</text>
+
+<rect x="240" y="126" width="200" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="340" y="144" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Coordinator</text>
+<text x="340" y="164" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Plans, checkpoints</text>
+
+<rect x="50" y="212" width="195" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="147" y="230" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Tactics agent</text>
+<text x="147" y="250" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Home team</text>
+<rect x="270" y="212" width="140" height="56" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.75"/>
+<text x="340" y="230" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#2C2C2A">MCP stats</text>
+<text x="340" y="250" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">Numbers only</text>
+<rect x="435" y="212" width="195" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="532" y="230" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Tactics agent</text>
+<text x="532" y="250" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Away team</text>
+
+<rect x="240" y="298" width="200" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="340" y="316" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Shift explainer</text>
+<text x="340" y="336" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Expect, confirm, summary</text>
+
+<rect x="240" y="384" width="200" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="340" y="402" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Storyteller</text>
+<text x="340" y="422" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">4 types × 3 languages</text>
+
+<rect x="240" y="470" width="200" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="340" y="488" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Checker</text>
+<text x="340" y="508" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Back-check + safety</text>
+<text x="480" y="455" dominant-baseline="central" font-size="12" fill="#5F5E5A">Rewrite, max 2</text>
+
+<rect x="40" y="470" width="160" height="56" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.75" stroke-dasharray="4 3"/>
+<text x="120" y="488" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#2C2C2A">Template</text>
+<text x="120" y="508" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">If late or rejected</text>
+
+<rect x="60" y="566" width="170" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.75"/>
+<text x="145" y="584" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#3C3489">Cue captions</text>
+<text x="145" y="604" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">On air at once</text>
+<rect x="255" y="566" width="170" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.75"/>
+<text x="340" y="584" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#3C3489">Cosmos</text>
+<text x="340" y="604" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">Insights + evidence</text>
+<rect x="450" y="566" width="170" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.75"/>
+<text x="535" y="584" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#3C3489">AI Speech</text>
+<text x="535" y="604" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">Spoken, optional</text>
+</g>
+<g stroke="#73726c" stroke-width="1.5" fill="none">
+<line x1="340" y1="526" x2="340" y2="546"/>
+<line x1="120" y1="526" x2="120" y2="546"/>
+<line x1="120" y1="546" x2="535" y2="546"/>
+</g>
+<g stroke="#73726c" stroke-width="1.5" fill="none" marker-end="url(#arrow)">
+<line x1="340" y1="96" x2="340" y2="124"/>
+<path d="M300 182 L300 196 L147 196 L147 210"/>
+<path d="M380 182 L380 196 L532 196 L532 210"/>
+<line x1="247" y1="240" x2="268" y2="240" marker-start="url(#arrow)"/>
+<line x1="412" y1="240" x2="433" y2="240" marker-start="url(#arrow)"/>
+<path d="M147 268 L147 284 L300 284 L300 296"/>
+<path d="M532 268 L532 284 L380 284 L380 296"/>
+<line x1="340" y1="354" x2="340" y2="382"/>
+<line x1="340" y1="440" x2="340" y2="468"/>
+<path d="M440 498 L470 498 L470 412 L442 412"/>
+<line x1="240" y1="498" x2="202" y2="498"/>
+<line x1="145" y1="546" x2="145" y2="564"/>
+<line x1="340" y1="546" x2="340" y2="564"/>
+<line x1="535" y1="546" x2="535" y2="564"/>
+</g>
+</svg>
