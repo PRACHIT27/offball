@@ -40,6 +40,9 @@ When a question touches rules, eligibility, prizes or submission, fetch the live
 | [COMPETITION.md](COMPETITION.md) | What we are judged against |
 | [docs/design/hld.md](docs/design/hld.md) | High-level design: domains, Azure architecture, flows, contracts |
 | [docs/design/lld-match-simulation.md](docs/design/lld-match-simulation.md) | Low-level design: Match Simulation (approved) |
+| [docs/design/lld-data-ingestion.md](docs/design/lld-data-ingestion.md) | Low-level design: Data Ingestion (approved) |
+| [docs/design/lld-performance-metrics.md](docs/design/lld-performance-metrics.md) | Low-level design: Performance Metrics (approved) |
+| [docs/design/lld-tactical-intelligence.md](docs/design/lld-tactical-intelligence.md) | Low-level design: Tactical Intelligence (approved) |
 | `docs/design/lld-*.md` | One low-level design per domain, added as each is approved |
 | [VERSION.md](VERSION.md) | Change log for governed files. Read the newest entries before you start |
 

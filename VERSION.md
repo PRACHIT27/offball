@@ -6,8 +6,8 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v0.2.0`**
-**Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics
+**Doc set version: `v0.3.0`**
+**Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence
 
 ---
 
@@ -35,6 +35,12 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v0.3.0 · 2026-10-22 · Prachit
+**Files:** docs/design/lld-tactical-intelligence.md (new), VERSION.md
+**Type:** MINOR
+- New: Tactical Intelligence design with workflow diagram. Rolling 5-minute windows every 10 s; two levels of output (tactical notes for every change, no AI; triggers for important ones); player position changes count as changes; tunable trigger buffer that caps agent reviews and summarizes bursts; confirm due at 4 minutes; answer-key scoring.
+- **Action required:** Lane 2 agents consume trigger types `crux`, `external`, `check_in`, `confirm_due`, `shift`, `summary` with the evidence pack in §7. Lane 3 renders window snapshots and tactical notes from `stats`.
 
 ## v0.2.0 · 2026-10-22 · Prachit
 **Files:** docs/design/lld-data-ingestion.md (new), docs/design/lld-performance-metrics.md (new), docs/design/hld.md, docs/design/lld-match-simulation.md, README.md, CLAUDE.md, VERSION.md
