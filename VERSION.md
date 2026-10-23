@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v0.1.0`**
+**Doc set version: `v0.1.1`**
 **Design status:** HLD draft · Match Simulation LLD approved
 
 ---
@@ -35,6 +35,13 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v0.1.1 · 2026-10-22 · Prachit
+**Files:** docs/design/lld-match-simulation.md, VERSION.md
+**Type:** PATCH
+- Fouls, cards and offsides now carry qualifiers (why the call was made), so referee decisions can be explained.
+- New match conditions (weather, temperature, pitch, stoppages): part of the truth, sent in feed A, usable as external-factor triggers.
+- **Action required:** Lane 1 ingestion must map feed A `typeId: 90` (conditions) and stoppage start/end messages.
 
 ## v0.1.0 · 2026-10-21 · Prachit
 **Files:** README.md, CLAUDE.md, COMPETITION.md, docs/design/hld.md, docs/design/lld-match-simulation.md

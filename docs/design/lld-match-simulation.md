@@ -296,6 +296,15 @@ Coefficients are starting values and are tuned until the realism tests pass (sec
 - Each tackle attempt: `p_foul = 0.12 + 0.15·(1 − discipline/100) + 0.1·(from_behind)`.
 - Each foul: `p_yellow = 0.12 + 0.2·(1 − discipline/100)`; a second yellow means a red; `p_straight_red = 0.01`.
 - Fouls in the box become penalties, taken as a shot with xG 0.76.
+- Every foul and card carries **qualifiers** that say why, so decisions can be explained later:
+
+| Event | Qualifiers (one or more) |
+|---|---|
+| Foul | `late_tackle`, `from_behind`, `holding`, `pushing`, `handball`, `dangerous_play`, `obstruction` |
+| Card | `reckless_challenge`, `serious_foul_play`, `denying_goal_chance`, `second_yellow`, `dissent`, `persistent_fouling`, `tactical_foul` |
+| Offside | `interfering_with_play`, `margin_m` (distance beyond the second-last defender) |
+
+Qualifiers are chosen from the situation (e.g. a foul from behind gets `from_behind`; stopping a breakaway gets `denying_goal_chance` or `tactical_foul`).
 
 ### 4.8 Stamina
 ```
@@ -308,13 +317,25 @@ Players with low stamina are preferred for substitution by the manager's sub log
 ### 4.9 Set pieces (simplified)
 Throw-ins, corners, goal kicks and free kicks restart from the correct spot with players moved to simple template positions over 3–6 s of game time. Corners create a header chance with xG 0.03–0.08.
 
+### 4.10 Match conditions
+Outside factors that can change how a match is played. They are part of the truth and are also reported in feed A, so downstream domains can use them as triggers.
+
+| Condition | Values | Effect in the simulation |
+|---|---|---|
+| Weather | `clear`, `rain`, `heavy_rain`, `wind` | Heavy rain: pass success logit −0.15, more long balls; wind: long-ball accuracy down |
+| Temperature | °C | Above 28 °C: stamina drains 20% faster |
+| Pitch | `good`, `wet`, `heavy` | Wet/heavy: ball slows faster (friction × 1.3) |
+| Stoppage | `injury`, `review`, `crowd`, `other` with start and end | Clock keeps running, play paused; added to stoppage time |
+
+Conditions start from the storyline (`set_conditions` directive) and may change during the match.
+
 ## 5. Provider emulator
 
 Two writers turn true frames and events into foreign formats. Each mess rule can be switched on or off in config (`mess: off | light | full`). The exact mess list is designed separately; candidates are listed here.
 
 | | Feed A (event style, "Opta-like") | Feed B (tracking style, "TRACAB-like") |
 |---|---|---|
-| Content | Events + lineups + pre-match info | Frames |
+| Content | Events (with qualifiers) + lineups + pre-match info + match conditions | Frames |
 | Coordinates | 0–100 grid on both axes, attacking direction flips at half-time | Centimetres, origin at pitch centre |
 | Clock | Seconds since period start, offset by a random 0.5–2.0 s | Frame counter from its own start, 25 Hz |
 | Field names | `typeId`, `outcome`, `x`, `y`, `qualifiers[]` | `frameIdx`, `ball[]`, `home[]`, `away[]` |
@@ -373,6 +394,13 @@ Two writers turn true frames and events into foreign formats. Each mess rule can
 }
 ```
 
+**Match conditions message** (feed A, sent at kick-off and on every change):
+```json
+{ "typeId": 90, "periodId": 2, "timeSec": 600.0,
+  "conditions": { "weather": "heavy_rain", "temperatureC": 14, "pitch": "wet" } }
+```
+Stoppages are sent as a start message and an end message with the same `stoppageId` and a `reason`.
+
 **`prematch.json`** (public, sent through feed A): clubs with traditional style and history summaries, managers with identity and preferred formations, team sheets, player profiles **without abilities** (name, number, position, career, milestones near).
 
 ## 8. Config schemas
@@ -385,7 +413,9 @@ home: RIV
 away: NGU
 directives:
   - { at: "23:10", force: goal, team: RIV }
+  - { at: "00:00", set_conditions: { weather: clear, temperature_c: 14, pitch: good } }
   - { at: "46:00", set_tactics: { team: NGU, formation: "3-5-2", pressers: 3 } }
+  - { at: "55:00", set_conditions: { weather: heavy_rain, pitch: wet } }
   - { at: "70:05", force: red_card, player: NGU-04 }
   - { at: "77:30", force: goal, team: NGU }
 ```
