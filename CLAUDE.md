@@ -11,7 +11,7 @@ from here.
 
 A simulated match streamed as two messy provider feeds, cleaned and merged, turned into stats and
 tactics from player positions, explained by a team of agents that predict and then confirm, checked
-so no number is invented, approved by a producer, and personalized per viewer type, club, player
+so no number is invented, on air automatically with a producer override, and personalized per viewer type, club, player
 and language.
 
 Inside the Game: Developer Hackathon (Microsoft × Premier League). Deadline **Tue Oct 27, 2026,

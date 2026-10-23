@@ -54,14 +54,14 @@ Judges may score based only on the video and description, so **the video carries
 
 OffBall is a real-time match-analysis pipeline on Azure. It simulates its own football match: all 22 players and the ball are tracked 25 times a second, plus events like passes, shots and cards. Tactics are secretly scripted into the simulation, so a team really does press, play a high line, or drop deep after a red card. The match is streamed in as two deliberately messy "provider" feeds, which the system cleans, merges, time-aligns and corrects. It then computes stats and tactics from player **positions**, not just events.
 
-Every 15 minutes, and after crux moments (cards, goals, subs, detected shifts), a team of LLM agents explains what changed and why it matters. They first predict ("expect a 4-4-1, deeper line"), then confirm or retract a few minutes later against the numbers. A checker agent blocks any claim the data doesn't support. The output is drawn on a pitch and emitted as timed JSON overlay cues that a broadcast graphics system could render. It goes through a producer approval queue and is personalized for analysts, casual fans, club supporters, single-player followers and different languages.
+Every 15 minutes, and after crux moments (cards, goals, subs, detected shifts), a team of LLM agents explains what changed and why it matters. They first predict ("expect a 4-4-1, deeper line"), then confirm or retract a few minutes later against the numbers. A checker agent blocks any claim the data doesn't support. The output is drawn on a pitch and emitted as timed JSON overlay cues that a broadcast graphics system could render. It goes on air as soon as it passes the checks (a producer can pull any cue) and is personalized for analysts, casual fans, club supporters, single-player followers and different languages.
 
 **What makes it different:**
 
 - **Positions, not just events.** We can measure team shape, off-ball runs and tactics. Competitors we reviewed only use event data.
 - **Tactic changes are detected and proven.** Every crux moment runs expect → confirm with a before/after board.
 - **Self-scoring.** The generator's hidden answer key lets us measure how accurate our own tactic detection is.
-- **Real broadcast problems handled.** Two messy feeds, live corrections, latency tracking, producer approval.
+- **Real broadcast problems handled.** Two messy feeds, live corrections, latency tracking, a producer override.
 
 **Design rule: visual first, words second.** Every insight gets a picture on the pitch. The caption only names it.
 
@@ -75,7 +75,7 @@ Five equally weighted criteria (20% each):
 |---|---|
 | Technological implementation | Clean staged pipeline, infrastructure as code, CI, tests, documented code; real use of every hero tech the rules name: Foundry, Agent Framework, Azure MCP, Copilot Agent Mode, Fabric, GitHub CLI, Azure AI Services, Azure databases (see [section 6](#6-tech-stack-by-task)) |
 | Agentic design and innovation | Distinct agents with one job each, our own MCP stats server, checker loop, checkpointing and recovery |
-| Real-world impact | Broadcast-ready overlay format, producer approval, corrections, a 3-second latency target |
+| Real-world impact | Broadcast-ready overlay format, producer override, corrections, a 3-second latency target |
 | UX and presentation | Visual-first pitch, the same moment shown four ways, a tight video under 2 minutes |
 | Adherence to category | Our pipeline covers all five stages in the brief: ingest, interpret, explain, render, personalize |
 
@@ -85,7 +85,7 @@ Five equally weighted criteria (20% each):
 |---|---|
 | Best Multi-Agent System / Orchestration | **Main target** |
 | Best Use of Microsoft Foundry Project | Strong: models, agents, evaluations, tracing all in Foundry |
-| Best Enterprise Solution | Strong: producer approval, managed identities, corrections, audit trail |
+| Best Enterprise Solution | Strong: producer override, managed identities, corrections, audit trail |
 | Best Azure Cloud Native Integration | Strong: Container Apps, Functions, Event Hubs, Fabric |
 
 Fabric, Azure AI Services and databases have no prize of their own, but they count toward the Technological Implementation score.
@@ -102,7 +102,7 @@ flowchart TD
   SIM --> RB[("Event Hubs<br/>raw-tracking")]
   RA --> NORM["Normalizers<br/>Azure Functions"]
   RB --> NORM
-  NORM --> CLEAN[("Event Hubs<br/>clean")]
+  NORM --> CLEAN[("Event Hubs<br/>normalized")]
   CLEAN --> ENG["Match engine<br/>Container Apps"]
   ENG --> STATS[("Event Hubs<br/>stats")]
   ENG --> TRIG[("Event Hubs<br/>triggers")]
@@ -136,7 +136,7 @@ flowchart TD
 | Ingest | Two messy feeds cleaned, merged, clock-aligned, corrected | 1 | Event Hubs, Azure Functions |
 | Interpret | Stats, off-ball metrics, tactics, changes over time | 1 | Container Apps (match engine), Cosmos DB |
 | Explain | Agents explain, predict, confirm, check | 2 | Agent Framework, Microsoft Foundry, MCP |
-| Show | Pitch visuals, overlay cues, producer queue | 3 | React, Web PubSub, Static Web Apps |
+| Show | Pitch visuals, overlay cues, producer console | 3 | React, Web PubSub, Static Web Apps |
 | Personalize | Analyst/casual, club, player focus, language | 3 (UI) + 2 (text) | React, storyteller agent |
 
 ---
@@ -148,7 +148,7 @@ flowchart TD
 | Area | What it owns |
 |---|---|
 | **Data** | Synthetic match generator and answer key; cleaning and merging the feeds; computing every stat and tactic; scoring detection accuracy |
-| **Software** | Azure infrastructure (Event Hubs, Functions, Container Apps, Cosmos DB, App Insights); overlay cue format; producer queue; live sync to browsers; frontend pitch visuals; personalization modes; deployment, CI and tests |
+| **Software** | Azure infrastructure (Event Hubs, Functions, Container Apps, Cosmos DB, App Insights); overlay cue format; producer console; live sync to browsers; frontend pitch visuals; personalization modes; deployment, CI and tests |
 | **AI** | Agent team (coordinator, tactics agents, shift-explainer, storyteller, checker); narratives, recaps and multilingual captions |
 
 **Core rule: code computes every number, agents only explain.** No number originates from an LLM. Tactic-shift *detection* runs in code (Lane 1). The agent only writes the expect/confirm text.
@@ -165,9 +165,9 @@ flowchart TD
 | Stats and tactics engine | Python service on Container Apps: NumPy/SciPy (Voronoi diagrams for space control), scikit-learn (formation clustering) | Every number, including shift detection, comes from code |
 | Match state and history | Cosmos DB for NoSQL (serverless) + Blob Storage (Parquet frames) | Replay, recaps, overlay history, agent checkpoints |
 | Stats access for agents | Our own MCP server (Python MCP SDK) wrapping the stats API | Agents can only get numbers through tools; hits the MCP judging criterion |
-| Agent orchestration | Microsoft Agent Framework (Python) workflows | Graph workflows with checkpointing and human-in-the-loop approvals |
+| Agent orchestration | Microsoft Agent Framework (Python) workflows | Graph workflows with checkpointing |
 | Models and agent hosting | Microsoft Foundry project: fast small model for live captions, stronger model for recaps and the checker | Core of the "Best Use of Foundry" prize |
-| Quality and safety | Foundry evaluations (groundedness) + Azure AI Content Safety on every caption before it can be approved | Gives us a measurable checker pass rate and a safety gate |
+| Quality and safety | Foundry evaluations (groundedness) + Azure AI Content Safety on every caption before it goes on air | Gives us a measurable checker pass rate and a safety gate |
 | Languages | Storyteller writes directly in each language; react-i18next for UI text | Multi-language requirement |
 | Checking non-English captions | Azure AI Translator translates each non-English caption back to English so the checker verifies the same numbers in every language | Catches a number that changed in translation |
 | Spoken commentary | Azure AI Speech (neural voices) reads captions aloud in player-focus and casual modes | Audio option for fans; another AI Service in real use |
@@ -176,7 +176,7 @@ flowchart TD
 | Live push to browsers | Azure Web PubSub (or SignalR Service) | Event Hubs can't reach browsers directly |
 | Frontend | React + TypeScript + Vite; pitch in SVG with D3; hosted on Static Web Apps | SVG easily handles 23 objects moving 25 times a second |
 | Overlay cue format | Versioned JSON Schema in the repo | Contract any graphics system can read |
-| Producer console | Same React app with Entra ID sign-in; approvals via Agent Framework human-in-the-loop | Enterprise-style controls |
+| Producer console | Same React app with Entra ID sign-in; live view of every cue with a pull (withdraw) button | Enterprise-style controls |
 | Observability | Application Insights + Azure Monitor OpenTelemetry Distro in every service; Foundry tracing for agents | Delay dashboard and agent traces |
 | Security | Managed identities everywhere, Key Vault for any remaining secrets | Enterprise readiness |
 | Infrastructure and deploy | Azure Developer CLI (azd) + Bicep, so `azd up` deploys everything | Reproducible; judges can rebuild it |
@@ -231,7 +231,7 @@ Each person owns one lane end to end, **including its design and architecture**.
 ### Lane 3: Experience
 
 - React pitch view: moving dots, name tags, pass arcs, defensive line, pressing rings
-- Before/after boards, timeline, producer queue
+- Before/after boards, timeline, producer console
 - Web PubSub hookup for live updates
 - Personalization: analyst, casual, club supporter, player focus, language
 - Fabric Real-Time Dashboard (delay + match analytics) fed by Eventstream; Playwright end-to-end tests
@@ -322,7 +322,7 @@ After the Thursday review, a contract changes **only if all three agree**.
 }
 ```
 
-Cue `status` moves: `proposed` → `approved` → `on_air` → `withdrawn` (if corrected).
+Cue `status` moves: `on_air` → `withdrawn` (if corrected or pulled by the producer). Captions are added to a cue already on air.
 
 **Example MCP tools:** `get_line_height(team, window)`, `get_pressing(team, window)`, `get_style(team, window)`, `compare_windows(team, a, b)`, `get_player_stats(player, window)`.
 
@@ -360,7 +360,7 @@ How often a feature is computed decides where it runs and what state it needs.
 |---|---|---|
 | `raw-events` | Simulator (feed A) | Normalizer A |
 | `raw-tracking` | Simulator (feed B) | Normalizer B |
-| `clean` | Normalizers | Match engine |
+| `normalized` | Normalizers | Match engine (merge stage) |
 | `stats` | Match engine | Web PubSub bridge (Lane 3) |
 | `triggers` | Match engine | Agent workflow (Lane 2) |
 

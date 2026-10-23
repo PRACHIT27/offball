@@ -6,8 +6,8 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v0.1.1`**
-**Design status:** HLD draft · Match Simulation LLD approved
+**Doc set version: `v0.2.0`**
+**Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics
 
 ---
 
@@ -35,6 +35,15 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v0.2.0 · 2026-10-22 · Prachit
+**Files:** docs/design/lld-data-ingestion.md (new), docs/design/lld-performance-metrics.md (new), docs/design/hld.md, docs/design/lld-match-simulation.md, README.md, CLAUDE.md, VERSION.md
+**Type:** MINOR
+- New: Data Ingestion design (Bronze landing via Event Hubs Capture, normalizers, merge stage, mess handling, Silver storage) and Performance Metrics design (calculations, triggering, outputs), each with a diagram.
+- Hub `clean` renamed to `normalized`; frames (Bronze and Silver) stored in OneLake.
+- Feed A now carries provider xG on every shot; Performance Metrics uses it instead of its own model.
+- **No approval step:** every cue, including AI captions, goes on air automatically once checks pass. The producer console can pull (withdraw) any cue.
+- **Action required:** Lane 2 drops the approval queue and human-in-the-loop step from the agent workflow; Lane 3 builds the producer console as a live view with a pull button.
 
 ## v0.1.1 · 2026-10-22 · Prachit
 **Files:** docs/design/lld-match-simulation.md, VERSION.md

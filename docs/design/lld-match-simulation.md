@@ -335,13 +335,15 @@ Two writers turn true frames and events into foreign formats. Each mess rule can
 
 | | Feed A (event style, "Opta-like") | Feed B (tracking style, "TRACAB-like") |
 |---|---|---|
-| Content | Events (with qualifiers) + lineups + pre-match info + match conditions | Frames |
+| Content | Events (with qualifiers, and provider xG on shots) + lineups + pre-match info + match conditions | Frames |
 | Coordinates | 0–100 grid on both axes, attacking direction flips at half-time | Centimetres, origin at pitch centre |
 | Clock | Seconds since period start, offset by a random 0.5–2.0 s | Frame counter from its own start, 25 Hz |
 | Field names | `typeId`, `outcome`, `x`, `y`, `qualifiers[]` | `frameIdx`, `ball[]`, `home[]`, `away[]` |
 | IDs | Its own numeric player IDs + lookup in lineups | Shirt numbers only |
 
-**Mess candidates:** duplicate messages, dropped frames, out-of-order delivery, late corrections (same event re-sent with new type or position), deletions, clock drift, unit mistakes in a small share of records.
+**Provider xG.** Every shot in feed A carries `xG`, as real event providers do. The emulator computes it with its own simple model (different coefficients from the simulator's hidden truth, plus ±15% noise), so it is realistic but never a copy of the truth.
+
+**Mess:** the final list and how each is fixed are in [Data Ingestion §5](lld-data-ingestion.md#5-mess-and-how-its-handled). Candidates: duplicate messages, dropped frames, out-of-order delivery, late corrections (same event re-sent with new type or position), deletions, clock drift, unit mistakes in a small share of records.
 
 ## 6. Replay streamer
 

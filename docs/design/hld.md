@@ -37,7 +37,7 @@ This document describes the whole system at the level of domains, Azure services
 | Performance Metrics | Name tags, speed and distance alerts, pass quality, ball and shot speed, xG range, open options, decision score, decoy run credit |
 | Tactical Intelligence | Line height and offside trap, pressing, style dial, control vs. chaos, passing network, chance routes, shift detection, 15-minute check-ins, crux-moment triggers, "confirm due", comparison to each team's normal style |
 | Insight Generation | Agent team explains, predicts and confirms; checks every claim; writes captions per viewer type and language; recaps |
-| Broadcast | Timed overlay cues, producer approval, corrections reaching the screen |
+| Broadcast | Timed overlay cues on air automatically, producer override, corrections reaching the screen |
 | Audience | Analyst, casual, club supporter, player focus, single metric, language |
 | Platform | Infrastructure, monitoring, delay dashboard, open dataset, CI |
 
@@ -71,7 +71,7 @@ flowchart LR
   TAC -. MCP queries .-> INS
   MET -->|number-only cues: fast path| BRD["Broadcast<br/><i>supporting</i>"]
   INS -->|checked captions| BRD
-  BRD -->|approved cues| AUD["Audience<br/><i>supporting</i>"]
+  BRD -->|cues on air| AUD["Audience<br/><i>supporting</i>"]
   PLT["Platform<br/><i>generic</i>"] -.-> SIM & ING & MET & TAC & INS & BRD & AUD
 ```
 
@@ -112,7 +112,7 @@ flowchart TD
   end
   RA --> NA
   RB --> NB
-  NA --> CLEAN[("Event Hubs: clean")]
+  NA --> CLEAN[("Event Hubs: normalized")]
   NB --> CLEAN
   NA --> DLQ[("Blob: dead-letter")]
   NB --> DLQ
@@ -151,7 +151,7 @@ flowchart TD
   SP --> PUB
   PUB --> UI["React app<br/>Static Web Apps"]
   UI --> PROD["Producer console<br/>Entra ID"]
-  PROD --> WF
+  PROD -->|pull a cue| COS
 
   STATS --> ES["Fabric Eventstream"]
   TRIG --> ES
@@ -172,7 +172,7 @@ flowchart TD
 | Cosmos DB for NoSQL (serverless) | Engine, agents, broadcast | Events, windows, triggers, cues, checkpoints |
 | Blob Storage | Simulation, ingestion | Match files, answer keys, dead letters, engine snapshots |
 | Microsoft Foundry | Insight Generation | Models, agents, evaluations, tracing |
-| Microsoft Agent Framework | Insight Generation | Workflow graph, checkpoints, human approval |
+| Microsoft Agent Framework | Insight Generation | Workflow graph, checkpoints |
 | Azure AI Content Safety | Insight Generation | Caption safety gate |
 | Azure AI Translator | Insight Generation | Back-translate non-English captions for checking |
 | Azure AI Speech | Insight Generation, Audience | Spoken captions |
@@ -219,11 +219,11 @@ flowchart TD
   "evidence": { "event_ids": ["e-004512"], "window_ids": ["w-NGU-60-70", "w-NGU-74-80"] },
   "captions": { "analyst.en": "…", "casual.es": "…" },
   "caption_source": "agent",
-  "status": "approved"
+  "status": "on_air"
 }
 ```
 
-Status moves `proposed → approved → on_air`, or to `withdrawn` when a correction removes its evidence. `caption_source` is `agent` or `template`.
+Every cue goes straight to `on_air`; there is no approval step. It moves to `withdrawn` when a correction removes its evidence or the producer pulls it. Captions are attached to a cue already on air. `caption_source` is `agent` or `template`.
 
 ## 7. Main flows
 
@@ -239,7 +239,7 @@ sequenceDiagram
   participant B as Browser
   S->>EH: raw batch (5 frames)
   EH->>N: trigger
-  N->>EH: clean batch
+  N->>EH: normalized batch
   EH->>E: consume
   E->>E: frame + event metrics
   E->>EH: stats + number-only cue
@@ -258,7 +258,7 @@ sequenceDiagram
   participant X as Shift explainer
   participant W as Storyteller
   participant K as Checker + Translator + Content Safety
-  participant Q as Producer queue
+  participant Q as Screen
   E->>C: trigger (red card, 70:05)
   C->>C: importance, merge nearby triggers
   par
@@ -270,7 +270,7 @@ sequenceDiagram
   X->>W: "expect" insight + evidence
   W->>K: captions per viewer type x language
   K-->>W: rejected (max 2 retries) or passed
-  K->>Q: cue with captions
+  K->>Q: captions attached, on air
   Note over E,C: +4 match minutes: engine sends "confirm due"
   E->>C: confirm due
   C->>X: compare before vs after windows
@@ -304,7 +304,9 @@ sequenceDiagram
 | Match files, pre-match info | Simulation | Blob `matches/`, OneLake | – |
 | Answer keys | Simulation | Blob `answer-keys/` (locked) | – |
 | Rejected records | Ingestion | Blob `dead-letter/` | – |
-| Clean events (versioned) | Ingestion | Cosmos `events` | `match_id` |
+| Raw feeds (Bronze) | Ingestion | OneLake via Event Hubs Capture | – |
+| Clean events (versioned, Silver) | Ingestion | Cosmos `events` | `match_id` |
+| Clean frames (Silver) | Ingestion | OneLake Parquet | `match_id/period/start_ms` |
 | Metric snapshots | Metrics | Cosmos `metrics` | `match_id` |
 | Windows, baselines, shifts, triggers | Tactical Intelligence | Cosmos `windows`, `triggers` | `match_id` |
 | Insights, recaps | Insight Generation | Cosmos `insights` | `match_id` |

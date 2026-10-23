@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="512" viewBox="0 0 680 512" role="img" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Performance Metrics workflow</title>
+<desc>Clean frames and events go to a router, which sends frames to the frame processor, events to the event processor and corrections to the correction handler. All results go to a publisher that sends them to the stats hub, number-only cues, Cosmos snapshots and Tactical Intelligence.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#73726c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect width="680" height="512" fill="#ffffff"/>
+<g font-size="14">
+<rect x="215" y="40" width="250" height="56" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.75"/>
+<text x="340" y="58" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#2C2C2A">Clean frames + events</text>
+<text x="340" y="78" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">From the merge stage</text>
+
+<rect x="240" y="126" width="200" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="340" y="144" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Router</text>
+<text x="340" y="164" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">By message type</text>
+
+<rect x="40" y="212" width="190" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="135" y="230" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Frame processor</text>
+<text x="135" y="250" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">25 per second</text>
+<rect x="245" y="212" width="190" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="340" y="230" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Event processor</text>
+<text x="340" y="250" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Each pass, shot, tackle</text>
+<rect x="450" y="212" width="190" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="545" y="230" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Correction handler</text>
+<text x="545" y="250" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Recompute + withdraw</text>
+
+<rect x="240" y="320" width="200" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="340" y="338" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Publisher</text>
+<text x="340" y="358" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Adds evidence IDs</text>
+
+<rect x="40" y="426" width="140" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.75"/>
+<text x="110" y="444" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#3C3489">stats hub</text>
+<text x="110" y="464" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">To the screen</text>
+<rect x="193" y="426" width="140" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.75"/>
+<text x="263" y="444" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#3C3489">Cues</text>
+<text x="263" y="464" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">Number-only</text>
+<rect x="346" y="426" width="140" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.75"/>
+<text x="416" y="444" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#3C3489">Cosmos</text>
+<text x="416" y="464" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">Snapshots</text>
+<rect x="499" y="426" width="140" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.75"/>
+<text x="569" y="444" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#3C3489">To Tactics</text>
+<text x="569" y="464" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">Pressure, values</text>
+</g>
+<g stroke="#73726c" stroke-width="1.5" fill="none">
+<line x1="340" y1="376" x2="340" y2="400"/>
+<line x1="110" y1="400" x2="569" y2="400"/>
+</g>
+<g stroke="#73726c" stroke-width="1.5" fill="none" marker-end="url(#arrow)">
+<line x1="340" y1="96" x2="340" y2="124"/>
+<path d="M300 182 L300 196 L135 196 L135 210"/>
+<line x1="340" y1="182" x2="340" y2="210"/>
+<path d="M380 182 L380 196 L545 196 L545 210"/>
+<line x1="450" y1="240" x2="437" y2="240"/>
+<path d="M135 268 L135 290 L290 290 L290 318"/>
+<line x1="340" y1="268" x2="340" y2="318"/>
+<path d="M545 268 L545 290 L390 290 L390 318"/>
+<line x1="110" y1="400" x2="110" y2="424"/>
+<line x1="263" y1="400" x2="263" y2="424"/>
+<line x1="416" y1="400" x2="416" y2="424"/>
+<line x1="569" y1="400" x2="569" y2="424"/>
+</g>
+</svg>
