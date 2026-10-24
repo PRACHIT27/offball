@@ -2,7 +2,9 @@
 
 > An AI match engine on Azure that sees where every player is, reads the tactics, notices when they change, and explains it on screen. Visuals come first, with a short story alongside. Built for the **Inside the Game: Developer Hackathon** (Microsoft × Premier League).
 
-**Start here:** [CLAUDE.md](CLAUDE.md) (hub) · [COMPETITION.md](COMPETITION.md) · [High-level design](docs/design/hld.md) · [Match Simulation LLD](docs/design/lld-match-simulation.md) · [VERSION.md](VERSION.md)
+**Start here:** [CLAUDE.md](CLAUDE.md) (hub) · [COMPETITION.md](COMPETITION.md) · [High-level design](docs/design/hld.md) · [Low-level designs](docs/design/) · [VERSION.md](VERSION.md)
+
+![OffBall high-level architecture](docs/design/diagrams/architecture.svg)
 
 **Team:** 3 · **Submission deadline:** **Tue Oct 27, 2026, 11:59 pm PT** (Wed Oct 28, 2:59 am ET) · **Winners announced:** by Nov 20
 

@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v0.7.0`**
+**Doc set version: `v0.7.1`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,11 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v0.7.1 · 2026-10-23 · Prachit
+**Files:** README.md, docs/design/hld.md, docs/design/diagrams/architecture.svg (new), VERSION.md
+**Type:** PATCH
+- Detailed high-level architecture diagram (all eight domains, their parts, hubs, Cosmos DB, Platform) added at the top of the README and the high-level design. HLD now links every low-level design.
 
 ## v0.7.0 · 2026-10-23 · Prachit
 **Files:** docs/design/lld-platform.md (new), CLAUDE.md, VERSION.md

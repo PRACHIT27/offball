@@ -1,7 +1,9 @@
 # OffBall: High-Level Design
 
 **Status:** draft v0.1 · **Date:** 2026-10-21 · **Applies to:** whole system
-**Companion docs:** one low-level design per domain in `docs/design/lld-*.md` (first: [Match Simulation](lld-match-simulation.md))
+**Companion docs:** one low-level design per domain: [Match Simulation](lld-match-simulation.md) · [Data Ingestion](lld-data-ingestion.md) · [Performance Metrics](lld-performance-metrics.md) · [Tactical Intelligence](lld-tactical-intelligence.md) · [Insight Generation](lld-insight-generation.md) · [Broadcast](lld-broadcast.md) · [Audience](lld-audience.md) · [Platform](lld-platform.md)
+
+![OffBall high-level architecture](diagrams/architecture.svg)
 
 ---
 
