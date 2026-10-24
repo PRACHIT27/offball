@@ -6,8 +6,8 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v0.6.0`**
-**Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience
+**Doc set version: `v0.7.0`**
+**Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
 
@@ -35,6 +35,13 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v0.7.0 · 2026-10-23 · Prachit
+**Files:** docs/design/lld-platform.md (new), CLAUDE.md, VERSION.md
+**Type:** MINOR
+- New: Platform design with overview diagram. East US 2; one instance kept warm through Nov 10; resource list and names; identity and access table (only `id-eval` reads answer keys); Fabric dashboard tiles with fallback; CI/CD workflows including the results comment; Codespaces and local mode; recorded runs and rate-limited "run live".
+- Open: Azure subscription/budget and Fabric capacity still to be decided.
+- **Action required:** Lane 2 starts `infra/` and CI on Thursday per §12.
 
 ## v0.6.0 · 2026-10-23 · Prachit
 **Files:** docs/design/lld-audience.md (new), docs/design/lld-performance-metrics.md, docs/design/lld-tactical-intelligence.md, CLAUDE.md, VERSION.md

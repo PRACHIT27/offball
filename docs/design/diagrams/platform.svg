@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="520" viewBox="0 0 680 520" role="img" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Platform overview</title>
+<desc>GitHub holds the repo, Actions, Codespaces and Copilot. azd up with Bicep deploys one Azure resource group per environment in East US 2, containing messaging, compute, data, AI, web, and security and monitoring services. Fabric reads from the pipeline for the dashboard and dataset; judges and viewers use the demo link.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#73726c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect width="680" height="520" fill="#ffffff"/>
+<g font-size="14">
+<rect x="40" y="40" width="280" height="76" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.75"/>
+<text x="180" y="62" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#2C2C2A">GitHub</text>
+<text x="180" y="86" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">Repo · Actions · Codespaces · Copilot</text>
+<rect x="360" y="40" width="280" height="76" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.75"/>
+<text x="500" y="62" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#2C2C2A">azd up + Bicep</text>
+<text x="500" y="86" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">One command deploys everything</text>
+
+<rect x="40" y="150" width="600" height="240" rx="12" fill="none" stroke="#888780" stroke-width="0.75" stroke-dasharray="5 4"/>
+<text x="56" y="170" dominant-baseline="central" font-weight="500" fill="#2C2C2A">Azure · East US 2 · one resource group per environment</text>
+
+<rect x="60" y="190" width="180" height="76" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="150" y="210" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Messaging</text>
+<text x="150" y="232" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Event Hubs, Capture</text>
+<text x="150" y="250" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Schema Registry</text>
+<rect x="250" y="190" width="180" height="76" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="340" y="210" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Compute</text>
+<text x="340" y="232" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Container Apps + jobs</text>
+<text x="340" y="250" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Functions</text>
+<rect x="440" y="190" width="180" height="76" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
+<text x="530" y="210" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#085041">Data</text>
+<text x="530" y="232" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Cosmos DB (serverless)</text>
+<text x="530" y="250" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">Blob Storage</text>
+
+<rect x="60" y="290" width="180" height="76" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.75"/>
+<text x="150" y="310" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#3C3489">AI</text>
+<text x="150" y="332" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">Foundry, Agent Framework</text>
+<text x="150" y="350" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">Translator, Safety, Speech</text>
+<rect x="250" y="290" width="180" height="76" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.75"/>
+<text x="340" y="310" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#3C3489">Web</text>
+<text x="340" y="332" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">Static Web Apps</text>
+<text x="340" y="350" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">Web PubSub</text>
+<rect x="440" y="290" width="180" height="76" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.75"/>
+<text x="530" y="310" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#3C3489">Security + monitoring</text>
+<text x="530" y="332" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">Managed identities, Key Vault</text>
+<text x="530" y="350" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">Entra ID, App Insights</text>
+
+<rect x="40" y="420" width="280" height="70" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.75"/>
+<text x="180" y="440" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#633806">Microsoft Fabric</text>
+<text x="180" y="462" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#854F0B">Eventstream · Eventhouse</text>
+<text x="180" y="478" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#854F0B">Dashboard · OneLake dataset</text>
+<rect x="360" y="420" width="280" height="70" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.75"/>
+<text x="500" y="440" text-anchor="middle" dominant-baseline="central" font-weight="500" fill="#2C2C2A">Judges and viewers</text>
+<text x="500" y="462" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">Demo link, warm until Nov 10</text>
+<text x="500" y="478" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">Testing instructions</text>
+</g>
+<g stroke="#73726c" stroke-width="1.5" fill="none" marker-end="url(#arrow)">
+<line x1="320" y1="78" x2="358" y2="78"/>
+<line x1="500" y1="116" x2="500" y2="148"/>
+<line x1="180" y1="390" x2="180" y2="418"/>
+<line x1="500" y1="390" x2="500" y2="418"/>
+</g>
+</svg>
