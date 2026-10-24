@@ -6,8 +6,8 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v0.4.0`**
-**Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation
+**Doc set version: `v0.5.0`**
+**Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast
 
 ---
 
@@ -35,6 +35,12 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v0.5.0 · 2026-10-23 · Prachit
+**Files:** docs/design/lld-broadcast.md (new), CLAUDE.md, VERSION.md
+**Type:** MINOR
+- New: Broadcast design with diagram. Cue manager owns the truth (versions, corrections, pulls, log); each browser schedules for itself on its own match clock; four slots (pitch overlay, caption bar, side panel, timeline) with priority and a 10 s stale rule; producer console watches and pulls; cue feed for external graphics systems.
+- **Action required:** Lane 3 builds the browser cue player (clock, inbox, scheduler, filter) and the producer console. Upstream domains use the cue kinds in §6.
 
 ## v0.4.0 · 2026-10-23 · Prachit
 **Files:** docs/design/lld-insight-generation.md (new), CLAUDE.md, VERSION.md
