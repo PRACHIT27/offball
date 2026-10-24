@@ -6,8 +6,8 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v0.5.0`**
-**Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast
+**Doc set version: `v0.6.0`**
+**Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience
 
 ---
 
@@ -35,6 +35,13 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v0.6.0 · 2026-10-23 · Prachit
+**Files:** docs/design/lld-audience.md (new), docs/design/lld-performance-metrics.md, docs/design/lld-tactical-intelligence.md, CLAUDE.md, VERSION.md
+**Type:** MINOR
+- New: Audience design with dark layout diagram. Pitch as hero, one caption and one highlight at a time, charts in a side panel, viewer types set the density, side-by-side mode, single-metric mode, Ask the studio, English/Spanish/Hindi, phone layout.
+- Performance Metrics adds PM-29 player heatmaps; Tactical Intelligence adds TI-35 team territory heatmaps and TI-36 chart series.
+- **Action required:** Lane 1 emits `kind: heatmap` and `kind: series` on `stats`. Lane 3 builds the viewer screen per this design.
 
 ## v0.5.0 · 2026-10-23 · Prachit
 **Files:** docs/design/lld-broadcast.md (new), CLAUDE.md, VERSION.md

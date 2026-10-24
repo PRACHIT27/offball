@@ -45,6 +45,7 @@ When a question touches rules, eligibility, prizes or submission, fetch the live
 | [docs/design/lld-tactical-intelligence.md](docs/design/lld-tactical-intelligence.md) | Low-level design: Tactical Intelligence (approved) |
 | [docs/design/lld-insight-generation.md](docs/design/lld-insight-generation.md) | Low-level design: Insight Generation (approved) |
 | [docs/design/lld-broadcast.md](docs/design/lld-broadcast.md) | Low-level design: Broadcast (approved) |
+| [docs/design/lld-audience.md](docs/design/lld-audience.md) | Low-level design: Audience (approved) |
 | `docs/design/lld-*.md` | One low-level design per domain, added as each is approved |
 | [VERSION.md](VERSION.md) | Change log for governed files. Read the newest entries before you start |
 

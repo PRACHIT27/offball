@@ -51,6 +51,8 @@
 | TI-32 | Recompute affected windows on corrections and deletions | Must |
 | TI-33 | Score detected shifts against the answer key | Must |
 | TI-34 | Run locally without Azure | Must |
+| TI-35 | Team territory heatmaps (in and out of possession), 21 × 14 grid, per window | Should |
+| TI-36 | Chart series: line height, pressing and control over the whole match, ready to draw, updated each window | Must |
 
 ## 3. Non-functional requirements
 
@@ -99,6 +101,8 @@ Coordinates are mirrored per team so x is always the distance from that team's o
 | **Chance routes** | For each shot, follow the possession back to its start; record the lane (left, centre, right third of the width) where it entered the final third and every player involved. Shares by lane and player |
 | **Line-breaking passes** | A completed pass whose path crosses the opponent's back or midfield line, bypassing ≥ 2 opponents |
 | **Player positions** | Each player's average position, in and out of possession |
+| **Team territory** | Share of frames each team's players spend in each cell of a 21 × 14 grid, split by in and out of possession |
+| **Chart series** | Appended values per window for line height, pressing intensity and control share, sent as `kind: series` so the UI draws charts without recomputing |
 
 ### 5.2 Normal style (baseline)
 Built once from pre-match info: the manager's identity settings and the club's recent averages (line height, pressing, pass length, formation). Normal range = baseline ± the club's season variation (or ± 10% when history is thin). A window is **unusual** when a measure stays outside the normal range for ≥ 2 minutes.

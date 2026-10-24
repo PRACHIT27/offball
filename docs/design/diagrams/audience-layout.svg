@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="520" viewBox="0 0 680 520" role="img" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Viewer screen layout</title>
+<desc>Dark broadcast-style viewer screen. Top bar with match, viewer type, club, player, language and playback controls. Live pitch on the left with one highlight, caption bar under it, side panel on the right with momentum, xG race, passing network and Ask the studio, and a timeline across the bottom.</desc>
+<rect width="680" height="520" fill="#0f1512"/>
+<g font-size="12" fill="#e6ece7">
+<rect x="20" y="20" width="640" height="40" rx="8" fill="#161e19" stroke="#2a352e"/>
+<rect x="30" y="27" width="90" height="26" rx="4" fill="#1d2721" stroke="#2a352e"/><text x="75" y="40" text-anchor="middle" dominant-baseline="central">Match ▾</text>
+<rect x="128" y="27" width="90" height="26" rx="4" fill="#1d2721" stroke="#2a352e"/><text x="173" y="40" text-anchor="middle" dominant-baseline="central">Analyst ▾</text>
+<rect x="226" y="27" width="90" height="26" rx="4" fill="#1d2721" stroke="#2a352e"/><text x="271" y="40" text-anchor="middle" dominant-baseline="central">Club ▾</text>
+<rect x="324" y="27" width="90" height="26" rx="4" fill="#1d2721" stroke="#2a352e"/><text x="369" y="40" text-anchor="middle" dominant-baseline="central">Player ▾</text>
+<rect x="422" y="27" width="70" height="26" rx="4" fill="#1d2721" stroke="#2a352e"/><text x="457" y="40" text-anchor="middle" dominant-baseline="central">EN ▾</text>
+<rect x="500" y="27" width="150" height="26" rx="4" fill="#1d2721" stroke="#2a352e"/><text x="575" y="40" text-anchor="middle" dominant-baseline="central">▶  10×  ·  Next moment</text>
+
+<rect x="20" y="76" width="440" height="280" rx="8" fill="#1f5a3a"/>
+<g fill="none" stroke="#5fbf8a" stroke-opacity="0.6" stroke-width="1">
+<rect x="32" y="88" width="416" height="256"/>
+<line x1="240" y1="88" x2="240" y2="344"/>
+<circle cx="240" cy="216" r="34"/>
+<rect x="32" y="156" width="56" height="120"/>
+<rect x="392" y="156" width="56" height="120"/>
+</g>
+<line x1="140" y1="94" x2="140" y2="338" stroke="#e8a24f" stroke-width="2" stroke-dasharray="6 4"/>
+<g stroke="#0f1512" stroke-width="1">
+<circle cx="140" cy="120" r="6" fill="#f07167"/><circle cx="140" cy="175" r="6" fill="#f07167"/><circle cx="140" cy="250" r="6" fill="#f07167"/><circle cx="140" cy="310" r="6" fill="#f07167"/>
+<circle cx="185" cy="140" r="6" fill="#f07167"/><circle cx="185" cy="216" r="6" fill="#f07167"/><circle cx="185" cy="290" r="6" fill="#f07167"/>
+<circle cx="215" cy="180" r="6" fill="#e6ece7"/><circle cx="230" cy="260" r="6" fill="#e6ece7"/><circle cx="270" cy="216" r="6" fill="#e6ece7"/><circle cx="300" cy="130" r="6" fill="#e6ece7"/><circle cx="300" cy="300" r="6" fill="#e6ece7"/>
+</g>
+<circle cx="262" cy="226" r="3" fill="#ffd166"/>
+<text x="148" y="104" fill="#e8a24f" font-size="11">Line 26 m</text>
+
+<rect x="20" y="366" width="440" height="44" rx="8" fill="#161e19" stroke="#2a352e"/>
+<text x="240" y="388" text-anchor="middle" dominant-baseline="central">Northgate dropped 12 m deeper after the red card.</text>
+
+<rect x="476" y="76" width="184" height="334" rx="8" fill="#161e19" stroke="#2a352e"/>
+<rect x="488" y="88" width="160" height="66" rx="6" fill="#1d2721"/><text x="568" y="104" text-anchor="middle" dominant-baseline="central" font-weight="500" font-size="13">Momentum</text>
+<polyline points="498,140 520,132 540,136 560,120 580,126 600,110 620,118 638,104" fill="none" stroke="#5fbf8a" stroke-width="1.5"/>
+<rect x="488" y="164" width="160" height="66" rx="6" fill="#1d2721"/><text x="568" y="180" text-anchor="middle" dominant-baseline="central" font-weight="500" font-size="13">xG race</text>
+<polyline points="498,218 540,214 580,204 638,196" fill="none" stroke="#e6ece7" stroke-width="1.5"/>
+<polyline points="498,220 540,218 580,216 638,206" fill="none" stroke="#f07167" stroke-width="1.5"/>
+<rect x="488" y="240" width="160" height="66" rx="6" fill="#1d2721"/><text x="568" y="256" text-anchor="middle" dominant-baseline="central" font-weight="500" font-size="13">Passing network</text>
+<g stroke="#9aa89f" stroke-width="1"><line x1="520" y1="290" x2="560" y2="275"/><line x1="560" y1="275" x2="610" y2="288"/><line x1="520" y1="290" x2="610" y2="288"/></g>
+<g fill="#e6ece7"><circle cx="520" cy="290" r="3"/><circle cx="560" cy="275" r="3"/><circle cx="610" cy="288" r="3"/></g>
+<rect x="488" y="316" width="160" height="82" rx="6" fill="#1d2721"/><text x="568" y="336" text-anchor="middle" dominant-baseline="central" font-weight="500" font-size="13">Ask the studio</text>
+<rect x="498" y="352" width="140" height="22" rx="4" fill="#0f1512" stroke="#2a352e"/><text x="506" y="363" dominant-baseline="central" fill="#9aa89f" font-size="11">Why are they so deep?</text>
+
+<rect x="20" y="426" width="640" height="64" rx="8" fill="#161e19" stroke="#2a352e"/>
+<line x1="40" y1="444" x2="640" y2="444" stroke="#2a352e" stroke-width="2"/>
+<circle cx="170" cy="444" r="6" fill="#5fbf8a"/><text x="170" y="470" text-anchor="middle" dominant-baseline="central" fill="#9aa89f">Goal 23'</text>
+<circle cx="300" cy="444" r="6" fill="#a99cf0"/><text x="300" y="470" text-anchor="middle" dominant-baseline="central" fill="#9aa89f">Switch 46'</text>
+<circle cx="485" cy="444" r="6" fill="#f07167"/><text x="485" y="470" text-anchor="middle" dominant-baseline="central" fill="#9aa89f">Red 70'</text>
+<circle cx="535" cy="444" r="6" fill="#e8a24f"/><text x="545" y="470" text-anchor="middle" dominant-baseline="central" fill="#9aa89f">Shift 74'</text>
+</g>
+</svg>

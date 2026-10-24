@@ -45,6 +45,7 @@ Pressure on one player at one moment lives here. Pressing as a team tactic lives
 | PM-26 | Hand pressure and pass values to Tactical Intelligence | Must |
 | PM-27 | After a match, compare distance, top speed and sprints with the simulator's truth | Should |
 | PM-28 | Run locally without Azure | Must |
+| PM-29 | Player heatmap: share of time in each cell of a 21 × 14 grid (5 m cells), per player, updated every 10 s of match time | Should |
 
 ## 3. Non-functional requirements
 
@@ -132,7 +133,10 @@ Time from receiving the ball until `pressure ≥ 0.75` (an opponent within 2 m),
 - **Match range:** goals from all shots modelled as independent chances; the 10th–90th percentile of the total goals is the range (exact calculation by dynamic programming over the shots).
 - **Chance story:** count of big chances (xG ≥ 0.3) and how much of the total xG they make up. Example: "1–3 goals expected, mostly from 2 big chances."
 
-### 5.9 Fatigue drop-off (nice to have)
+### 5.9 Player heatmap
+Count frames each player spends in each 5 m × 4.86 m cell (21 × 14 grid), for the whole match and the last 15 minutes. Sent as normalized shares every 10 s (`kind: heatmap`) and stored with the 10-second totals.
+
+### 5.10 Fatigue drop-off (nice to have)
 Highest sprint speed in the last 5 minutes ÷ highest in the first 15 minutes, per player.
 
 ## 6. Outputs
