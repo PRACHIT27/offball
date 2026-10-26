@@ -107,15 +107,26 @@ Rules for any session building Data Ingestion (`ingest/` normalizers, `engine/` 
 | Azure changes | Ask before creating, changing or deleting any Azure resource |
 | Local mode | `python -m tests.fixturegen --out local_feeds/fx01 --mess light`, then `python -m engine.local --feeds local_feeds/fx01/feeds --out local_out --match fx01` |
 
-**Azure resources that already exist** (resource group `offball-rg`, region `westus2`):
+**Azure resources** (resource group `offball-rg`, region `westus2`; `bash azure-setup.sh` rebuilds all of it):
 
 | Resource | Name |
 |---|---|
 | Event Hubs namespace (Standard) | `offball-eh-kr2610`: hubs `raw-events`, `raw-tracking` (Capture on → `bronze`), `normalized`; consumer groups `ingest`, `ingest`, `engine` |
-| Storage, data (hierarchical namespace) | `offballstkr2610`: containers `bronze`, `silver-frames`, `dead-letter` |
+| Storage, data (hierarchical namespace) | `offballstkr2610`: containers `bronze`, `silver-frames`, `dead-letter`, `checkpoints`, `teamsheets` |
 | Cosmos DB (serverless) | `offball-cosmos-kr2610`: database `offball`, container `events` (partition `/match_id`) |
-| Function App (Flex Consumption) | `offball-ingest-kr2610`, plan `ASP-offballrg-7469`, storage `offballfnkr2610`, Application Insights `offball-ingest-kr2610` |
-| Container Apps environment | `offball-env` (express, no log destination) |
+| Function App (Flex Consumption, Python 3.12) | `offball-ingest-kr2610`: normalizers `normalize_feed_a`, `normalize_feed_b` as `id-ingest`; plan `ASP-offballrg-7469`, storage `offballfnkr2610`, Application Insights `offball-ingest-kr2610` |
+| Container Apps | environment `offball-env` (express, no log destination); app `offball-engine` (1 replica) as `id-engine` |
+| Container registry | `offballacrkr2610` (image `offball-engine`) |
+| Managed identities | `id-ingest`, `id-engine`, least-privilege roles per LLD §10 |
 
-**Open item:** `offball-ingest-kr2610` was created with Python 3.11. Switch its runtime to 3.12,
-asking the owner before running the command.
+| Task | Command |
+|---|---|
+| Deploy normalizers | `scripts/build_functionapp.sh && (cd build/functionapp && func azure functionapp publish offball-ingest-kr2610 --python)` |
+| Deploy engine (Docker running) | `scripts/deploy_engine.sh` |
+| Stop / start engine | `scripts/engine.sh stop` / `scripts/engine.sh start` |
+| Replay a fixture into Azure | `python -m tests.fixturegen.stream --feeds local_feeds/fx01/feeds --speed 10` |
+| Engine logs | Application Insights `offball-ingest-kr2610`, `cloud_RoleName == "offball-engine"` |
+
+**Before the demo:** turn on one always-ready normalizer instance (off during build to save cost):
+`az functionapp scale config always-ready set -g offball-rg -n offball-ingest-kr2610 --settings function:normalize_feed_b=1`.
+Afterwards: `az functionapp scale config always-ready delete -g offball-rg -n offball-ingest-kr2610 --setting-names function:normalize_feed_b`.

@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v1.1.0`**
+**Doc set version: `v1.1.1`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,11 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v1.1.1 · 2026-10-26 · Kanika
+**Files:** CLAUDE.md, VERSION.md
+**Type:** PATCH
+- Lane 1 section: full Azure resource list (identities, registry, engine app, extra containers), deploy / stop / start / replay commands, where engine logs are, and the before-the-demo always-ready step. The Python 3.12 open item is closed.
 
 ## v1.1.0 · 2026-10-26 · Kanika
 **Files:** CLAUDE.md, VERSION.md, .githooks/pre-commit (now executable)
