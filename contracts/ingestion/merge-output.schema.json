@@ -1,0 +1,550 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/PRACHIT27/offball/blob/main/contracts/ingestion/merge-output.schema.json",
+  "version": "1.0.0",
+  "$defs": {
+    "CleanEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "pattern": "^e-\\d{6}$",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "status": {
+          "default": "active",
+          "enum": [
+            "active",
+            "deleted"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "match_id": {
+          "title": "Match Id",
+          "type": "string"
+        },
+        "match_clock_ms": {
+          "title": "Match Clock Ms",
+          "type": "integer"
+        },
+        "period": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Period",
+          "type": "integer"
+        },
+        "type": {
+          "enum": [
+            "pass",
+            "take_on",
+            "foul",
+            "tackle",
+            "interception",
+            "clearance",
+            "shot",
+            "card",
+            "sub_off",
+            "sub_on",
+            "period_start",
+            "period_end",
+            "conditions",
+            "stoppage_start",
+            "stoppage_end"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "team_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Team Id"
+        },
+        "player_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Player Id"
+        },
+        "target_player_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Player Id"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Point"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "end": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Point"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outcome"
+        },
+        "qualifiers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Qualifiers",
+          "type": "array"
+        },
+        "provider_xg": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Xg"
+        },
+        "details": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Details"
+        },
+        "source_ids": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Source Ids",
+          "type": "object"
+        },
+        "emitted_at": {
+          "title": "Emitted At",
+          "type": "string"
+        },
+        "timings": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "title": "Timings",
+          "type": "object"
+        }
+      },
+      "required": [
+        "event_id",
+        "version",
+        "match_id",
+        "match_clock_ms",
+        "period",
+        "type",
+        "source_ids",
+        "emitted_at"
+      ],
+      "title": "CleanEvent",
+      "type": "object"
+    },
+    "CleanFrame": {
+      "additionalProperties": false,
+      "properties": {
+        "frame": {
+          "minimum": 0,
+          "title": "Frame",
+          "type": "integer"
+        },
+        "match_clock_ms": {
+          "title": "Match Clock Ms",
+          "type": "integer"
+        },
+        "ball": {
+          "$ref": "#/$defs/Point3"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/PlayerPosition"
+          },
+          "title": "Players",
+          "type": "array"
+        },
+        "interpolated": {
+          "default": false,
+          "title": "Interpolated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "frame",
+        "match_clock_ms",
+        "ball",
+        "players"
+      ],
+      "title": "CleanFrame",
+      "type": "object"
+    },
+    "CleanFrameBatch": {
+      "additionalProperties": false,
+      "properties": {
+        "match_id": {
+          "title": "Match Id",
+          "type": "string"
+        },
+        "period": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Period",
+          "type": "integer"
+        },
+        "frames": {
+          "items": {
+            "$ref": "#/$defs/CleanFrame"
+          },
+          "title": "Frames",
+          "type": "array"
+        },
+        "source_ids": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Source Ids",
+          "type": "object"
+        },
+        "emitted_at": {
+          "title": "Emitted At",
+          "type": "string"
+        },
+        "timings": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "title": "Timings",
+          "type": "object"
+        }
+      },
+      "required": [
+        "match_id",
+        "period",
+        "frames",
+        "emitted_at"
+      ],
+      "title": "CleanFrameBatch",
+      "type": "object"
+    },
+    "EventDelete": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "event.delete",
+          "default": "event.delete",
+          "title": "Kind",
+          "type": "string"
+        },
+        "event": {
+          "$ref": "#/$defs/CleanEvent"
+        }
+      },
+      "required": [
+        "event"
+      ],
+      "title": "EventDelete",
+      "type": "object"
+    },
+    "EventUpsert": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "event.upsert",
+          "default": "event.upsert",
+          "title": "Kind",
+          "type": "string"
+        },
+        "event": {
+          "$ref": "#/$defs/CleanEvent"
+        },
+        "late": {
+          "default": false,
+          "title": "Late",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "event"
+      ],
+      "title": "EventUpsert",
+      "type": "object"
+    },
+    "FramesOut": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "frames",
+          "default": "frames",
+          "title": "Kind",
+          "type": "string"
+        },
+        "batch": {
+          "$ref": "#/$defs/CleanFrameBatch"
+        }
+      },
+      "required": [
+        "batch"
+      ],
+      "title": "FramesOut",
+      "type": "object"
+    },
+    "Notice": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "notice.gap_start",
+            "notice.gap_end",
+            "notice.feed_stopped",
+            "notice.feed_resumed",
+            "notice.correction_applied",
+            "conditions.changed",
+            "stoppage.start",
+            "stoppage.end"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "notice_id": {
+          "title": "Notice Id",
+          "type": "string"
+        },
+        "match_id": {
+          "title": "Match Id",
+          "type": "string"
+        },
+        "period": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Period"
+        },
+        "match_clock_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Match Clock Ms"
+        },
+        "details": {
+          "additionalProperties": true,
+          "default": {},
+          "title": "Details",
+          "type": "object"
+        },
+        "emitted_at": {
+          "title": "Emitted At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "notice_id",
+        "match_id",
+        "emitted_at"
+      ],
+      "title": "Notice",
+      "type": "object"
+    },
+    "PlayerPosition": {
+      "additionalProperties": false,
+      "properties": {
+        "player_id": {
+          "title": "Player Id",
+          "type": "string"
+        },
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "player_id",
+        "x",
+        "y"
+      ],
+      "title": "PlayerPosition",
+      "type": "object"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Point",
+      "type": "object"
+    },
+    "Point3": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        },
+        "z": {
+          "title": "Z",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "title": "Point3",
+      "type": "object"
+    },
+    "Prematch": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "prematch",
+          "default": "prematch",
+          "title": "Kind",
+          "type": "string"
+        },
+        "match_id": {
+          "title": "Match Id",
+          "type": "string"
+        },
+        "prematch": {
+          "additionalProperties": true,
+          "title": "Prematch",
+          "type": "object"
+        }
+      },
+      "required": [
+        "match_id",
+        "prematch"
+      ],
+      "title": "Prematch",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "conditions.changed": "#/$defs/Notice",
+      "event.delete": "#/$defs/EventDelete",
+      "event.upsert": "#/$defs/EventUpsert",
+      "frames": "#/$defs/FramesOut",
+      "notice.correction_applied": "#/$defs/Notice",
+      "notice.feed_resumed": "#/$defs/Notice",
+      "notice.feed_stopped": "#/$defs/Notice",
+      "notice.gap_end": "#/$defs/Notice",
+      "notice.gap_start": "#/$defs/Notice",
+      "prematch": "#/$defs/Prematch",
+      "stoppage.end": "#/$defs/Notice",
+      "stoppage.start": "#/$defs/Notice"
+    },
+    "propertyName": "kind"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/EventUpsert"
+    },
+    {
+      "$ref": "#/$defs/EventDelete"
+    },
+    {
+      "$ref": "#/$defs/FramesOut"
+    },
+    {
+      "$ref": "#/$defs/Notice"
+    },
+    {
+      "$ref": "#/$defs/Prematch"
+    }
+  ],
+  "title": "merge-output"
+}

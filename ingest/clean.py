@@ -1,6 +1,6 @@
 """Clean (Silver) format, Data Ingestion LLD §7. Everything after ingestion sees only this.
 
-Kept here until the team agrees to publish it in contracts/ (VERSION.md v1.0.0).
+Published as JSON Schema in contracts/ingestion/ (python -m engine.contracts).
 """
 
 from typing import Annotated, Literal
