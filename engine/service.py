@@ -20,7 +20,10 @@ from azure.storage.blob import BlobServiceClient
 from engine.core import EngineCore
 from engine.store_azure import AzureStore, BlobSnapshots
 
-CHECKPOINT_EVERY_S = 5.0
+# Full checkpoints (frames, snapshots, hub position) are I/O inside the processing lock, so not
+# too often; a restart replays at most this much, and replays are dropped as duplicates
+CHECKPOINT_EVERY_S = 30.0
+RECEIVE_WAIT_S = 0.2
 COUNTS_EVERY_S = 30.0
 log = logging.getLogger("offball.engine")
 
@@ -96,6 +99,12 @@ def main() -> None:
                         if counts != logged.get(match_id):
                             logged[match_id] = counts
                             log.info("match %s counts %s", match_id, counts)
+                    with lock:
+                        lags = {f: sorted(v) for f, v in core.arrival_lag.items() if v}
+                        core.arrival_lag = {"A": [], "B": []}
+                    for feed, v in lags.items():
+                        log.info("arrival lag feed %s: n=%d p50=%.0f ms p95=%.0f ms max=%.0f ms",
+                                 feed, len(v), v[len(v) // 2], v[int(len(v) * 0.95)], v[-1])
             except Exception:
                 log.exception("engine timer failed")
 
@@ -106,7 +115,8 @@ def main() -> None:
         checkpoint_store=BlobCheckpointStore(account, "checkpoints", credential=cred))
     log.info("engine listening on normalized (consumer group engine)")
     with client:
-        client.receive_batch(on_event_batch=on_batch, max_batch_size=200, max_wait_time=1,
+        client.receive_batch(on_event_batch=on_batch, max_batch_size=200,
+                             max_wait_time=RECEIVE_WAIT_S,
                              starting_position="-1")
 
 

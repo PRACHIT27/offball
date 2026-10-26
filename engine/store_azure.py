@@ -13,6 +13,8 @@ class AzureStore:
         self.cosmos = cosmos_container
         self.blobs = frames_container
         self.frames = ChunkBuffer()
+        # Chunks already merged with what was in Blob when this process first touched them
+        self.merged: set[ChunkKey] = set()
 
     def _upsert(self, doc_id: str, doc_type: str, body: dict) -> None:
         self.cosmos.upsert_item({**body, "id": doc_id, "match_id": self.match_id,
@@ -35,12 +37,17 @@ class AzureStore:
 
     def _write_chunk(self, key: ChunkKey) -> None:
         blob = self.blobs.get_blob_client(chunk_name(self.match_id, key))
-        try:  # a chunk can span a restart: merge with what is already written
-            rows = from_bytes(blob.download_blob().readall())
-        except ResourceNotFoundError:
-            rows = {}
-        rows.update(self.frames.chunks[key])
-        blob.upload_blob(to_bytes(rows), overwrite=True)
+        if key not in self.merged:
+            # A chunk can span a restart: merge with what an earlier process wrote, once only.
+            # After that this process holds every row of the chunk, so no more downloads.
+            try:
+                rows = from_bytes(blob.download_blob().readall())
+            except ResourceNotFoundError:
+                rows = {}
+            rows.update(self.frames.chunks[key])
+            self.frames.chunks[key] = rows
+            self.merged.add(key)
+        blob.upload_blob(to_bytes(self.frames.chunks[key]), overwrite=True)
 
     def flush(self, counts: dict | None = None) -> None:
         for key in self.frames.chunks:

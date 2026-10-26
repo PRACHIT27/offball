@@ -140,6 +140,7 @@ class MergeStage:
     def _event(self, ev: CleanEvent, wall_ms: float, now: str) -> list[MergeOutput]:
         if self._dedupe(f"E:{ev.event_id}:{ev.version}", wall_ms):
             return []
+        ev = ev.model_copy(update={"timings": {**ev.timings, "received_at": now}})
         prev = self.latest.get(ev.event_id)
         if (prev and ev.version <= prev.version) or ev.version <= self.tombstones.get(
                 ev.event_id, 0):
