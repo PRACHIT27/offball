@@ -112,9 +112,16 @@ class MergeStage:
                 for n in found]
 
     def flush(self, wall_ms: float) -> list[MergeOutput]:
-        """End of stream: release everything still in the wait window."""
+        """Release everything still in the wait window (end of stream, or a long quiet spell).
+
+        The watermark is left alone, so events that arrive afterwards are ordered as usual.
+        """
+        held = self.watermark
         self.watermark = (99, 0)
-        return self._release(wall_iso(wall_ms))
+        try:
+            return self._release(wall_iso(wall_ms))
+        finally:
+            self.watermark = held
 
     # ---------- events ----------
 

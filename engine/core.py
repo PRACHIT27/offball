@@ -1,0 +1,80 @@
+"""Engine core: routes normalized messages to one merge stage per match, stores the output and
+snapshots state. Storage and snapshots are injected, so this runs in tests without Azure."""
+
+import json
+from collections.abc import Callable
+from typing import Protocol
+
+from pydantic import TypeAdapter
+
+from engine.merge.outputs import MergeOutput
+from engine.merge.stage import MergeStage, parse_wall
+from ingest.clean import NormalizedMessage
+
+normalized_adapter: TypeAdapter[NormalizedMessage] = TypeAdapter(NormalizedMessage)
+
+# A match with no messages for this long has its wait window released (end of match, breaks)
+IDLE_FLUSH_MS = 5_000
+
+
+class SilverStore(Protocol):
+    def write(self, outputs: list[MergeOutput]) -> None: ...
+    def flush(self, counts: dict | None = None) -> None: ...
+
+
+class SnapshotStore(Protocol):
+    def load(self, match_id: str) -> str | None: ...
+    def save(self, match_id: str, state_json: str) -> None: ...
+
+
+class EngineCore:
+    def __init__(self, store_for: Callable[[str], SilverStore], snapshots: SnapshotStore,
+                 router: Callable[[list[MergeOutput]], None] = lambda outputs: None) -> None:
+        self.store_for = store_for
+        self.snapshots = snapshots
+        # Performance Metrics plugs in here (LLD §9); a no-op until it exists
+        self.router = router
+        self.stages: dict[str, MergeStage] = {}
+        self.stores: dict[str, SilverStore] = {}
+        self.last_seen: dict[str, float] = {}
+
+    def _stage(self, match_id: str) -> MergeStage:
+        if match_id not in self.stages:
+            saved = self.snapshots.load(match_id)
+            self.stages[match_id] = (MergeStage.from_state(json.loads(saved)) if saved
+                                     else MergeStage(match_id))
+            self.stores[match_id] = self.store_for(match_id)
+        return self.stages[match_id]
+
+    def handle(self, body: str | bytes, props: dict, now_ms: float) -> list[MergeOutput]:
+        msg = normalized_adapter.validate_json(body)
+        match_id = props["match_id"]
+        stage = self._stage(match_id)
+        out = stage.handle(msg, parse_wall(props["emitted_at"]))
+        self.last_seen[match_id] = now_ms
+        self._emit(match_id, out)
+        return out
+
+    def tick(self, now_ms: float, wall_ms: float | None = None) -> list[MergeOutput]:
+        """Timer: feed health, and release held events of matches that have gone quiet."""
+        out_all: list[MergeOutput] = []
+        for match_id, stage in self.stages.items():
+            out = stage.tick(wall_ms if wall_ms is not None else now_ms)
+            if stage.buffer and now_ms - self.last_seen.get(match_id, now_ms) > IDLE_FLUSH_MS:
+                out += stage.flush(now_ms)
+            self._emit(match_id, out)
+            out_all += out
+        return out_all
+
+    def _emit(self, match_id: str, out: list[MergeOutput]) -> None:
+        if out:
+            self.stores[match_id].write(out)
+            self.router(out)
+
+    def checkpoint(self) -> None:
+        """Make stored output durable, then snapshot state (always ahead of the hub checkpoint,
+        which is safe: replayed messages are dropped as duplicates)."""
+        for match_id, stage in self.stages.items():
+            counts = dict(stage.counts) | {"clock_offset_ms": stage.offset_ms}
+            self.stores[match_id].flush(counts)
+            self.snapshots.save(match_id, json.dumps(stage.to_state()))

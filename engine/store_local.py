@@ -12,27 +12,9 @@ import hashlib
 import json
 from pathlib import Path
 
-import pyarrow as pa
-import pyarrow.parquet as pq
-
+from engine.frames_parquet import ChunkBuffer, ChunkKey, chunk_name, from_bytes, to_bytes
 from engine.merge.outputs import EventDelete, EventUpsert, FramesOut, MergeOutput, Notice, Prematch
-from ingest.clean import PERIOD_BASE_MS, CleanFrame
 from ingest.normalize import DeadLetter
-
-CHUNK_MS = 300_000
-
-FRAME_SCHEMA = pa.schema([
-    ("frame", pa.int32()), ("match_clock_ms", pa.int64()), ("period", pa.int8()),
-    ("ball_x", pa.float32()), ("ball_y", pa.float32()), ("ball_z", pa.float32()),
-    ("interpolated", pa.bool_()),
-    ("players", pa.list_(pa.struct([("player_id", pa.string()), ("x", pa.float32()),
-                                    ("y", pa.float32())]))),
-])
-
-
-def _chunk(period: int, clock_ms: int) -> tuple[int, int]:
-    base = PERIOD_BASE_MS[period]
-    return period, base + (clock_ms - base) // CHUNK_MS * CHUNK_MS
 
 
 class LocalStore:
@@ -43,18 +25,15 @@ class LocalStore:
         self.notices: dict[str, dict] = {}
         self.dead_letters: dict[str, dict] = {}
         self.prematch: dict | None = None
-        # (period, start_ms) → {frame: CleanFrame}; written when complete or at flush
-        self.chunks: dict[tuple[int, int], dict[int, CleanFrame]] = {}
+        self.frames = ChunkBuffer()
         self.load()
-
-    # ---------- paths ----------
 
     @property
     def silver(self) -> Path:
         return self.root / "silver" / self.match_id
 
-    def frames_path(self, period: int, start_ms: int) -> Path:
-        return self.root / "silver-frames" / self.match_id / str(period) / f"{start_ms}.parquet"
+    def frames_path(self, key: ChunkKey) -> Path:
+        return self.root / "silver-frames" / chunk_name(self.match_id, key)
 
     # ---------- writes ----------
 
@@ -69,36 +48,18 @@ class LocalStore:
                 case Prematch():
                     self.prematch = o.prematch
                 case FramesOut():
-                    self._frames(o)
+                    for key in self.frames.add(o):
+                        self._write_chunk(key)
+                        del self.frames.chunks[key]
 
-    def _frames(self, o: FramesOut) -> None:
-        period = o.batch.period
-        for f in o.batch.frames:
-            key = _chunk(period, f.match_clock_ms)
-            self.chunks.setdefault(key, {})[f.frame] = f
-        # A chunk is complete once frames from a later chunk arrive
-        newest = max(self.chunks)
-        for key in [k for k in self.chunks if k < newest]:
-            self._write_chunk(key)
-            del self.chunks[key]
-
-    def _write_chunk(self, key: tuple[int, int]) -> None:
-        period, start_ms = key
-        path = self.frames_path(period, start_ms)
-        existing = {}
-        if path.exists():  # a chunk can span a restart: merge with what is already written
-            for row in pq.read_table(path).to_pylist():
-                existing[row["frame"]] = row
-        for n, f in self.chunks[key].items():
-            existing[n] = {
-                "frame": f.frame, "match_clock_ms": f.match_clock_ms, "period": period,
-                "ball_x": f.ball.x, "ball_y": f.ball.y, "ball_z": f.ball.z,
-                "interpolated": f.interpolated,
-                "players": [{"player_id": p.player_id, "x": p.x, "y": p.y} for p in f.players]}
-        rows = [existing[n] for n in sorted(existing)]
+    def _write_chunk(self, key: ChunkKey) -> None:
+        path = self.frames_path(key)
+        # A chunk can span a restart: merge with what is already written
+        rows = from_bytes(path.read_bytes()) if path.exists() else {}
+        rows.update(self.frames.chunks[key])
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_suffix(".tmp")
-        pq.write_table(pa.Table.from_pylist(rows, schema=FRAME_SCHEMA), tmp, compression="zstd")
+        tmp.write_bytes(to_bytes(rows))
         tmp.replace(path)
 
     def dead_letter(self, dl: DeadLetter) -> None:
@@ -117,7 +78,7 @@ class LocalStore:
             _dump(self.silver / "prematch.json", self.prematch)
         if counts is not None:
             _dump(self.silver / "counts.json", counts)
-        for key in self.chunks:
+        for key in self.frames.chunks:
             self._write_chunk(key)
 
     def load(self) -> None:
@@ -130,7 +91,7 @@ class LocalStore:
     def read_frames(self) -> list[dict]:
         rows = []
         for path in sorted((self.root / "silver-frames" / self.match_id).rglob("*.parquet")):
-            rows += pq.read_table(path).to_pylist()
+            rows += from_bytes(path.read_bytes()).values()
         return sorted(rows, key=lambda r: (r["period"], r["frame"]))
 
 

@@ -60,3 +60,12 @@ def test_off_level_has_no_mess(tmp_path):
     assert fx.clock_offset_ms == 0 and fx.mess_log == {}
     a = _lines(fx.feeds_dir / "feed_a.jsonl")
     assert len(a) == len(fx.truth.events) + 2  # + prematch and lineup
+
+
+def test_stream_schedule_keeps_order_and_scales_with_speed(full):
+    from tests.fixturegen.stream import schedule
+
+    slow, fast = schedule(full.feeds_dir, 1.0), schedule(full.feeds_dir, 10.0)
+    assert [s[0] for s in slow] == sorted(s[0] for s in slow) and slow[0][0] == 0
+    assert abs(fast[-1][0] * 10 - slow[-1][0]) < 1e-6
+    assert [s[1:] for s in slow] == [f[1:] for f in fast]

@@ -1,0 +1,9 @@
+# Match engine (merge stage today; metrics and tactics later). Built for linux/amd64.
+FROM python:3.12-slim
+WORKDIR /app
+COPY pyproject.toml ./
+COPY ingest ingest
+COPY engine engine
+RUN pip install --no-cache-dir ".[azure]"
+USER 1000
+CMD ["python", "-m", "engine.service"]
