@@ -22,6 +22,7 @@ venv/
 # Generated match files and local feeds (sample match in fixtures/ is committed)
 out/
 local_feeds/
+local_out/
 *.parquet
 !fixtures/**/*.parquet
 
