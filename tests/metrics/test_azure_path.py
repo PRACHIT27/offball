@@ -77,12 +77,13 @@ def hub(fx):
 
 
 def run_azure(hub, root, crash_at=None):
-    producer, cosmos, snapshots = FakeProducer(), FakeContainer(), Memory()
+    producer, cosmos = FakeProducer(), FakeContainer()
+    snapshots, metric_snapshots = Memory(), Memory()
 
     def fresh():
         router = MetricsRouter(
             Publisher([StatsHubSink(producer, FakeEventData, now=lambda: "t"),
-                       CosmosMetricsSink(cosmos)]), snapshots)
+                       CosmosMetricsSink(cosmos)]), metric_snapshots)
         return EngineCore(lambda m: LocalStore(root, m), snapshots, router), router
 
     core, router = fresh()

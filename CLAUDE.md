@@ -119,3 +119,29 @@ Rules for any session building Data Ingestion (`ingest/` normalizers, `engine/` 
 
 **Open item:** `offball-ingest-kr2610` was created with Python 3.11. Switch its runtime to 3.12,
 asking the owner before running the command.
+
+## Lane 1: Performance Metrics
+
+Rules for any session building Performance Metrics (`engine/metrics/`). Hand-off notes for every
+teammate: [engine/metrics/README.md](engine/metrics/README.md).
+
+| Rule | Detail |
+|---|---|
+| Design | Build as [lld-performance-metrics.md](docs/design/lld-performance-metrics.md) specifies; decisions beyond it are listed in the README's "Decisions and open items" |
+| Branch | `performance-metrics` (carries the Data Ingestion work it builds on). Never push to `main` |
+| Python | Same `.venv` as Data Ingestion, with Azure extras: `uv pip install --python .venv -e '.[dev,azure]' azure-functions` |
+| Local first | `python -m engine.metrics.local --feeds local_feeds/fx01/feeds --out local_out --match fx01` |
+| Plain functions | Formulas in `engine/metrics/calc/` (no state, no I/O); Azure SDK clients only in `engine/service.py`, injected into `sinks_azure.py` |
+| Numbers | Every number comes from code and carries evidence (event IDs, frames); nothing reads `answer-keys/` except `tests/metrics/test_truth.py` |
+| Azure changes | Ask before creating any resource; the commands needed are in the README |
+
+**Others build on this:**
+
+| Teammate | Builds on | Where |
+|---|---|---|
+| Tactical Intelligence | `PressureSample` per frame and `PassValues` per pass, by direct call; `pressure()`, `pitch_value()`; shared `FrameMemory` | README §Tactical Intelligence, `engine/metrics/models.py` |
+| Insight Generation (Stats API, MCP) | Cosmos `metrics`: cumulative `player:{id}:{clock}` totals, `event:{id}:{version}` results | README §Insight Generation |
+| Broadcast, Audience | `stats` hub: `positions`, `player_totals`, `heatmap`, `pass`, `shot`, `xg`; number-only cues with `type=cue` | README §Broadcast and Audience |
+| Platform | `stats` hub + consumer groups, Cosmos `metrics`, roles for the engine identity | README §Platform |
+| Data Ingestion | `EngineCore(router=MetricsRouter)` in `engine/service.py` | README §Data Ingestion |
+| Match Simulation | `provider_xg` on every shot; realistic acceleration | README §Match Simulation |

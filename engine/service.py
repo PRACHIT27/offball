@@ -58,7 +58,7 @@ def main() -> None:
         metrics = MetricsRouter(
             Publisher([StatsHubSink(stats_hub),
                        CosmosMetricsSink(db.get_container_client("metrics"))]),
-            snapshots)
+            BlobSnapshots(blobs.get_container_client("checkpoints"), prefix="metrics"))
     core = EngineCore(lambda match_id: AzureStore(match_id, cosmos, frames), snapshots,
                       **({"router": metrics} if metrics else {}))
 

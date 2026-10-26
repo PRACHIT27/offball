@@ -50,16 +50,18 @@ class AzureStore:
 
 
 class BlobSnapshots:
-    """Merge-stage snapshots in Blob `checkpoints/engine/{match_id}.json`."""
+    """Snapshots in Blob `checkpoints/{prefix}/{match_id}.json`: `engine` for the merge stage,
+    `metrics` for Performance Metrics."""
 
-    def __init__(self, container) -> None:
+    def __init__(self, container, prefix: str = "engine") -> None:
         self.container = container
+        self.prefix = prefix
 
     def load(self, match_id: str) -> str | None:
         try:
-            return self.container.download_blob(f"engine/{match_id}.json").readall().decode()
+            return self.container.download_blob(f"{self.prefix}/{match_id}.json").readall().decode()
         except ResourceNotFoundError:
             return None
 
     def save(self, match_id: str, state_json: str) -> None:
-        self.container.upload_blob(f"engine/{match_id}.json", state_json, overwrite=True)
+        self.container.upload_blob(f"{self.prefix}/{match_id}.json", state_json, overwrite=True)

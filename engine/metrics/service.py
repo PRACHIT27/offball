@@ -2,8 +2,9 @@
 
 `MetricsRouter` is the callable passed as `EngineCore(router=…)`: the merge stage's outputs for
 every match go through one `MetricsEngine` per match, and the results through the publisher.
-`checkpoint()` saves each engine's state next to the merge stage's snapshot, so a restarted
-engine resumes its totals, cues and corrections ledger.
+`checkpoint()` saves each engine's state to its own snapshot store (Blob
+`checkpoints/metrics/`, apart from the merge stage's), so a restarted engine resumes its totals,
+cues and corrections ledger.
 
 Built on by: Data Ingestion's engine/service.py (wires it in), Tactical Intelligence (adds its
 callbacks to the publisher's `to_tactics`, or its own router next to this one).
@@ -26,11 +27,6 @@ def match_of(msg: MergeOutput) -> str:
     return msg.match_id
 
 
-def snapshot_key(match_id: str) -> str:
-    """Stored next to the merge stage's snapshot (`engine/{match_id}.json` in Blob)."""
-    return f"{match_id}.metrics"
-
-
 class MetricsRouter:
     def __init__(self, publisher: Publisher, snapshots: SnapshotStore | None = None) -> None:
         self.publisher = publisher
@@ -39,7 +35,7 @@ class MetricsRouter:
 
     def engine(self, match_id: str) -> MetricsEngine:
         if match_id not in self.engines:
-            saved = self.snapshots.load(snapshot_key(match_id)) if self.snapshots else None
+            saved = self.snapshots.load(match_id) if self.snapshots else None
             self.engines[match_id] = (MetricsEngine.from_state(json.loads(saved)) if saved
                                       else MetricsEngine(match_id))
         return self.engines[match_id]
@@ -53,4 +49,4 @@ class MetricsRouter:
         if self.snapshots is None:
             return
         for match_id, e in self.engines.items():
-            self.snapshots.save(snapshot_key(match_id), json.dumps(e.to_state()))
+            self.snapshots.save(match_id, json.dumps(e.to_state()))

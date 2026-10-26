@@ -1,4 +1,8 @@
-"""What Performance Metrics sends out (LLD §6, §7, HLD §6 cue v0.2)."""
+"""What Performance Metrics sends out (LLD §6, §7, HLD §6 cue v0.2).
+
+These shapes are what other domains build on; engine/metrics/README.md lists who uses which.
+They live here until the team agrees to publish them in contracts/.
+"""
 
 from typing import Literal
 
@@ -23,7 +27,10 @@ class Evidence(_Model):
 
 
 class StatsMessage(_Model):
-    """One message on the `stats` hub: the fast path to the screen."""
+    """One message on the `stats` hub: the fast path to the screen.
+
+    Built on by: the PubSub bridge and viewer screen (Broadcast, Audience), Fabric Eventstream.
+    """
 
     kind: StatsKind
     match_id: str
@@ -40,7 +47,11 @@ class StatsMessage(_Model):
 
 
 class Cue(_Model):
-    """Number-only overlay cue. Goes on air at once; no approval step (Broadcast LLD §5)."""
+    """Number-only overlay cue. Goes on air at once; no approval step (Broadcast LLD §5).
+
+    Built on by: the cue manager and the browser cue player (Broadcast). Sent on `stats` with
+    message property `type=cue`.
+    """
 
     cue_id: str
     version: int = 1
@@ -60,7 +71,11 @@ class Cue(_Model):
 
 
 class MetricDoc(_Model):
-    """Snapshot for Cosmos `metrics` (partition `match_id`), read by the Stats API (LLD §7)."""
+    """Snapshot for Cosmos `metrics` (partition `match_id`), read by the Stats API (LLD §7).
+
+    Built on by: the Stats API / MCP server (Insight Generation). `player:` totals are cumulative,
+    so a from…to range is a subtraction.
+    """
 
     id: str
     match_id: str
@@ -74,7 +89,10 @@ class MetricDoc(_Model):
 
 
 class PressureSample(_Model):
-    """Pressure on the ball carrier at one frame. TI counts a press at pressure ≥ 0.75."""
+    """Pressure on the ball carrier at one frame. TI counts a press at pressure ≥ 0.75.
+
+    Built on by: Tactical Intelligence (pressing), by direct call. Shape awaits TI's OK.
+    """
 
     kind: Literal["pressure"] = "pressure"
     match_id: str
@@ -88,7 +106,11 @@ class PressureSample(_Model):
 
 
 class PassValues(_Model):
-    """Pitch-value gain of one pass, for the passing network and chance routes."""
+    """Pitch-value gain of one pass, for the passing network and chance routes.
+
+    Built on by: Tactical Intelligence, by direct call; re-sent on correction, `deleted` on
+    deletion. Shape awaits TI's OK.
+    """
 
     kind: Literal["pass_values"] = "pass_values"
     match_id: str
