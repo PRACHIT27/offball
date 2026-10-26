@@ -23,7 +23,7 @@ from engine.store_azure import AzureStore, BlobSnapshots
 # Full checkpoints (frames, snapshots, hub position) are I/O inside the processing lock, so not
 # too often; a restart replays at most this much, and replays are dropped as duplicates
 CHECKPOINT_EVERY_S = 30.0
-RECEIVE_WAIT_S = 0.2
+PREFETCH = 300
 COUNTS_EVERY_S = 30.0
 log = logging.getLogger("offball.engine")
 
@@ -65,23 +65,27 @@ def main() -> None:
                       BlobSnapshots(blobs.get_container_client("checkpoints")))
 
     lock = threading.Lock()
-    last_checkpoint = {"t": time.monotonic()}
+    # Per partition, so a busy partition can't keep postponing a quiet one's checkpoint
+    last_checkpoint: dict[str, float] = {}
 
-    def on_batch(ctx, events) -> None:
-        if not events:
+    # One message at a time, not receive_batch: a batch is only handed over once it is full
+    # (200 messages took ~4 s at 10x), which delayed every event by seconds. The client still
+    # prefetches in the background, so this costs no throughput.
+    def on_event(ctx, e) -> None:
+        if e is None:
             return
         with lock:
-            now = time.time() * 1000
-            for e in events:
-                props = _props(e)
-                try:
-                    core.handle(e.body_as_str(), props, now)
-                except Exception:
-                    log.exception("could not handle message %s", props)
-            if time.monotonic() - last_checkpoint["t"] >= CHECKPOINT_EVERY_S:
+            props = _props(e)
+            try:
+                core.handle(e.body_as_str(), props, time.time() * 1000)
+            except Exception:
+                log.exception("could not handle message %s", props)
+            part = ctx.partition_id
+            if time.monotonic() - last_checkpoint.setdefault(part, time.monotonic()) \
+                    >= CHECKPOINT_EVERY_S:
                 core.checkpoint()
-                ctx.update_checkpoint(events[-1])
-                last_checkpoint["t"] = time.monotonic()
+                ctx.update_checkpoint(e)
+                last_checkpoint[part] = time.monotonic()
 
     def ticker() -> None:
         logged: dict[str, dict] = {}
@@ -115,9 +119,7 @@ def main() -> None:
         checkpoint_store=BlobCheckpointStore(account, "checkpoints", credential=cred))
     log.info("engine listening on normalized (consumer group engine)")
     with client:
-        client.receive_batch(on_event_batch=on_batch, max_batch_size=200,
-                             max_wait_time=RECEIVE_WAIT_S,
-                             starting_position="-1")
+        client.receive(on_event=on_event, prefetch=PREFETCH, starting_position="-1")
 
 
 if __name__ == "__main__":
