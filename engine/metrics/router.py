@@ -39,6 +39,9 @@ class MetricsEngine:
                 return self.frames.process(msg.batch) + self.events.release_ready()
             case EventUpsert():
                 ev = msg.event
+                if ev.type == "period_end":
+                    # No more frames are coming for this period: compute what still waits
+                    return self.flush_pending()
                 if ev.type in HANDLED or ev.event_id in self.events.ledger:
                     return self.corrections.upsert(ev)
                 return []
@@ -46,12 +49,16 @@ class MetricsEngine:
                 return self.corrections.delete(msg.event)
         return []
 
-    def flush(self) -> list[MetricsOutput]:
-        """End of the feed: compute whatever is still waiting for frames, and final totals."""
+    def flush_pending(self) -> list[MetricsOutput]:
         ep, out = self.events, []
         for ev in list(ep.pending):
             out += ep.apply(ev, ep.snapshot(ev))
         ep.pending = []
+        return out
+
+    def flush(self) -> list[MetricsOutput]:
+        """End of the feed: compute whatever is still waiting for frames, and final totals."""
+        out = self.flush_pending()
         m = self.memory
         if m.smoothed_to >= 0:
             s = m.slot(m.smoothed_to)

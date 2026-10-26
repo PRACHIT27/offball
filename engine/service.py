@@ -1,5 +1,9 @@
 """Match engine service on Container Apps (LLD §9): reads `normalized`, runs the merge stage,
-stores Silver, and checkpoints so a restart resumes without loss (FR-27).
+stores Silver, runs Performance Metrics (to the `stats` hub and Cosmos `metrics`), and
+checkpoints so a restart resumes without loss (FR-27).
+
+METRICS_ENABLED=0 runs the merge stage alone (e.g. before the `stats` hub and the Cosmos
+`metrics` container exist; see engine/metrics/README.md).
 
 Signs in as the user-assigned identity id-engine (AZURE_CLIENT_ID); no keys.
 
@@ -12,12 +16,15 @@ import threading
 import time
 
 from azure.cosmos import CosmosClient
-from azure.eventhub import EventHubConsumerClient
+from azure.eventhub import EventHubConsumerClient, EventHubProducerClient
 from azure.eventhub.extensions.checkpointstoreblob import BlobCheckpointStore
 from azure.identity import ManagedIdentityCredential
 from azure.storage.blob import BlobServiceClient
 
 from engine.core import EngineCore
+from engine.metrics.publisher import Publisher
+from engine.metrics.service import MetricsRouter
+from engine.metrics.sinks_azure import CosmosMetricsSink, StatsHubSink
 from engine.store_azure import AzureStore, BlobSnapshots
 
 CHECKPOINT_EVERY_S = 5.0
@@ -39,11 +46,26 @@ def main() -> None:
     cred = ManagedIdentityCredential(client_id=os.environ["AZURE_CLIENT_ID"])
     account = os.environ["STORAGE_ACCOUNT_URL"]
     blobs = BlobServiceClient(account, credential=cred)
-    cosmos = (CosmosClient(os.environ["COSMOS_ENDPOINT"], credential=cred)
-              .get_database_client("offball").get_container_client("events"))
+    db = CosmosClient(os.environ["COSMOS_ENDPOINT"], credential=cred).get_database_client("offball")
+    cosmos = db.get_container_client("events")
     frames = blobs.get_container_client("silver-frames")
-    core = EngineCore(lambda match_id: AzureStore(match_id, cosmos, frames),
-                      BlobSnapshots(blobs.get_container_client("checkpoints")))
+    snapshots = BlobSnapshots(blobs.get_container_client("checkpoints"))
+    metrics = None
+    if os.environ.get("METRICS_ENABLED", "1") != "0":
+        stats_hub = EventHubProducerClient(
+            fully_qualified_namespace=os.environ["EVENTHUB_NAMESPACE"], eventhub_name="stats",
+            credential=cred)
+        metrics = MetricsRouter(
+            Publisher([StatsHubSink(stats_hub),
+                       CosmosMetricsSink(db.get_container_client("metrics"))]),
+            snapshots)
+    core = EngineCore(lambda match_id: AzureStore(match_id, cosmos, frames), snapshots,
+                      **({"router": metrics} if metrics else {}))
+
+    def checkpoint() -> None:
+        core.checkpoint()
+        if metrics:
+            metrics.checkpoint()
 
     lock = threading.Lock()
     last_checkpoint = {"t": time.monotonic()}
@@ -60,7 +82,7 @@ def main() -> None:
                 except Exception:
                     log.exception("could not handle message %s", props)
             if time.monotonic() - last_checkpoint["t"] >= CHECKPOINT_EVERY_S:
-                core.checkpoint()
+                checkpoint()
                 ctx.update_checkpoint(events[-1])
                 last_checkpoint["t"] = time.monotonic()
 
@@ -69,7 +91,7 @@ def main() -> None:
             time.sleep(1)
             with lock:
                 if core.tick(time.time() * 1000):
-                    core.checkpoint()
+                    checkpoint()
             for match_id, stage in list(core.stages.items()):
                 log.info("match %s counts %s", match_id, dict(stage.counts))
 
