@@ -18,7 +18,8 @@ dev = ["pytest>=8", "ruff>=0.5"]
 azure = [
     "azure-identity>=1.15",
     "azure-eventhub>=5.11",
-    "azure-eventhub-checkpointstoreblob>=1.1",
+    "azure-eventhub-checkpointstoreblob-aio>=1.1",
+    "aiohttp>=3.9",
     "azure-storage-blob>=12.19",
     "azure-cosmos>=4.5",
     "azure-monitor-opentelemetry>=1.6",

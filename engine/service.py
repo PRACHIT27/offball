@@ -6,15 +6,16 @@ Signs in as the user-assigned identity id-engine (AZURE_CLIENT_ID); no keys.
     python -m engine.service
 """
 
+import asyncio
 import logging
 import os
-import threading
 import time
 
 from azure.cosmos import CosmosClient
-from azure.eventhub import EventHubConsumerClient
-from azure.eventhub.extensions.checkpointstoreblob import BlobCheckpointStore
+from azure.eventhub.aio import EventHubConsumerClient
+from azure.eventhub.extensions.checkpointstoreblobaio import BlobCheckpointStore
 from azure.identity import ManagedIdentityCredential
+from azure.identity.aio import ManagedIdentityCredential as AsyncManagedIdentityCredential
 from azure.storage.blob import BlobServiceClient
 
 from engine.core import EngineCore
@@ -52,10 +53,9 @@ def _props(event) -> dict:
             for k, v in (event.properties or {}).items()}
 
 
-def main() -> None:
-    setup_logging()
-
-    cred = ManagedIdentityCredential(client_id=os.environ["AZURE_CLIENT_ID"])
+async def run() -> None:
+    client_id = os.environ["AZURE_CLIENT_ID"]
+    cred = ManagedIdentityCredential(client_id=client_id)
     account = os.environ["STORAGE_ACCOUNT_URL"]
     blobs = BlobServiceClient(account, credential=cred)
     cosmos = (CosmosClient(os.environ["COSMOS_ENDPOINT"], credential=cred)
@@ -64,38 +64,40 @@ def main() -> None:
     core = EngineCore(lambda match_id: AzureStore(match_id, cosmos, frames),
                       BlobSnapshots(blobs.get_container_client("checkpoints")))
 
-    lock = threading.Lock()
+    # The engine core and its Cosmos/Blob calls are blocking: they run in a worker thread, one
+    # message at a time (the lock), so the receive loop keeps pulling from the hub meanwhile
+    lock = asyncio.Lock()
     # Per partition, so a busy partition can't keep postponing a quiet one's checkpoint
     last_checkpoint: dict[str, float] = {}
 
-    # One message at a time, not receive_batch: a batch is only handed over once it is full
-    # (200 messages took ~4 s at 10x), which delayed every event by seconds. The client still
-    # prefetches in the background, so this costs no throughput.
-    def on_event(ctx, e) -> None:
+    # Async client, one message at a time. Measured on `normalized`: the sync client hands over
+    # about one callback per second whatever its size (200-message batches: ~3.3 s median delay;
+    # per message: 1 msg/s), the async client ~0.1 s median at the full rate.
+    async def on_event(ctx, e) -> None:
         if e is None:
             return
-        with lock:
-            props = _props(e)
+        props = _props(e)
+        async with lock:
             try:
-                core.handle(e.body_as_str(), props, time.time() * 1000)
+                await asyncio.to_thread(core.handle, e.body_as_str(), props, time.time() * 1000)
             except Exception:
                 log.exception("could not handle message %s", props)
             part = ctx.partition_id
             if time.monotonic() - last_checkpoint.setdefault(part, time.monotonic()) \
                     >= CHECKPOINT_EVERY_S:
-                core.checkpoint()
-                ctx.update_checkpoint(e)
+                await asyncio.to_thread(core.checkpoint)
+                await ctx.update_checkpoint(e)
                 last_checkpoint[part] = time.monotonic()
 
-    def ticker() -> None:
+    async def ticker() -> None:
         logged: dict[str, dict] = {}
         last_counts = time.monotonic()
         while True:
-            time.sleep(1)
+            await asyncio.sleep(1)
             try:
-                with lock:
-                    if core.tick(time.time() * 1000):
-                        core.checkpoint()
+                async with lock:
+                    if await asyncio.to_thread(core.tick, time.time() * 1000):
+                        await asyncio.to_thread(core.checkpoint)
                 if time.monotonic() - last_counts >= COUNTS_EVERY_S:
                     last_counts = time.monotonic()
                     for match_id, stage in list(core.stages.items()):
@@ -103,7 +105,7 @@ def main() -> None:
                         if counts != logged.get(match_id):
                             logged[match_id] = counts
                             log.info("match %s counts %s", match_id, counts)
-                    with lock:
+                    async with lock:  # handle() appends from the worker thread
                         lags = {f: sorted(v) for f, v in core.arrival_lag.items() if v}
                         core.arrival_lag = {"A": [], "B": []}
                     for feed, v in lags.items():
@@ -112,14 +114,24 @@ def main() -> None:
             except Exception:
                 log.exception("engine timer failed")
 
-    threading.Thread(target=ticker, daemon=True).start()
+    acred = AsyncManagedIdentityCredential(client_id=client_id)
     client = EventHubConsumerClient(
         fully_qualified_namespace=os.environ["EVENTHUB_NAMESPACE"], eventhub_name="normalized",
-        consumer_group="engine", credential=cred,
-        checkpoint_store=BlobCheckpointStore(account, "checkpoints", credential=cred))
+        consumer_group="engine", credential=acred,
+        checkpoint_store=BlobCheckpointStore(account, "checkpoints", credential=acred))
+    timer = asyncio.create_task(ticker())
     log.info("engine listening on normalized (consumer group engine)")
-    with client:
-        client.receive(on_event=on_event, prefetch=PREFETCH, starting_position="-1")
+    try:
+        async with client:
+            await client.receive(on_event=on_event, prefetch=PREFETCH, starting_position="-1")
+    finally:
+        timer.cancel()
+        await acred.close()
+
+
+def main() -> None:
+    setup_logging()
+    asyncio.run(run())
 
 
 if __name__ == "__main__":
