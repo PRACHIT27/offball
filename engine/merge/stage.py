@@ -280,7 +280,8 @@ class MergeStage:
         m.seq = state["seq"]
         m.seen = state["seen"]
         m.watermark = tuple(state["watermark"])
-        m.held_since = state["held_since"]
+        # Fields added after the first deployment: snapshots from older engines lack them
+        m.held_since = state.get("held_since")
         m.frames = FrameTrack.from_state(state["frames"])
         m.clock = ClockAligner.from_state(state["clock"])
         m.health = FeedHealth.from_state(state["health"])

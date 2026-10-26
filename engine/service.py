@@ -38,6 +38,7 @@ def setup_logging() -> None:
     # Skip the Azure VM metadata probe: there is no VM endpoint on Container Apps, and the
     # failed probe was being logged as an exception
     os.environ.setdefault("OTEL_EXPERIMENTAL_RESOURCE_DETECTORS", "otel")
+    os.environ.setdefault("APPLICATIONINSIGHTS_STATSBEAT_DISABLED_ALL", "true")
     from azure.monitor.opentelemetry import configure_azure_monitor
 
     configure_azure_monitor(logger_name="")

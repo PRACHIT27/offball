@@ -107,3 +107,15 @@ def test_snapshot_round_trip_resumes_identically(tmp_path, cut):
         out += resumed.process(m)
     out += resumed.stage.flush(msgs[-1].wall_ms)
     assert [o.model_dump() for o in out] == [o.model_dump() for o in straight]
+
+
+def test_snapshot_from_an_older_engine_still_loads(tmp_path):
+    """Seen on Azure: a snapshot written before held_since existed made the new engine fail
+    every message of that match after a restart."""
+    fx = generate(tmp_path, rules=frozenset(), period_s=(60.0, 60.0), halftime_s=30)
+    pipe = Pipeline("fx01")
+    for m in list(messages(fx.feeds_dir))[:300]:
+        pipe.process(m)
+    old = pipe.stage.to_state()
+    del old["held_since"]
+    MergeStage.from_state(old)
