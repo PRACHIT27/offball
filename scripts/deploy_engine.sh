@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Build the match engine image, push it to ACR and create/update the Container App.
 # Needs Docker running locally (ACR Tasks are not allowed on this subscription).
-# Usage: scripts/deploy_engine.sh [tag]
+# Usage: [SUFFIX=kr2610 RG=offball-rg LOC=westus2] scripts/deploy_engine.sh [tag]
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 TAG=${1:-$(git rev-parse --short HEAD)}
-RG=offball-rg
-ACR=offballacrkr2610
+SUFFIX=${SUFFIX:-kr2610}
+RG=${RG:-offball-rg}
+LOC=${LOC:-westus2}
+ACR=offballacr$SUFFIX
 APP=offball-engine
 ENV=offball-env
 IMAGE="$ACR.azurecr.io/offball-engine:$TAG"
@@ -22,9 +24,9 @@ SUB=$(az account show --query id -o tsv)
 ID_RES=$(az identity show -g "$RG" -n id-engine --query id -o tsv)
 ID_CLIENT=$(az identity show -g "$RG" -n id-engine --query clientId -o tsv)
 ENV_ID=$(az resource show -g "$RG" -n "$ENV" --resource-type Microsoft.App/managedEnvironments --query id -o tsv)
-COSMOS=$(az cosmosdb show -g "$RG" -n offball-cosmos-kr2610 --query documentEndpoint -o tsv)
+COSMOS=$(az cosmosdb show -g "$RG" -n "offball-cosmos-$SUFFIX" --query documentEndpoint -o tsv)
 # Telemetry connection string goes in as a Container App secret; never printed
-AI_CONN=$(az resource show -g "$RG" -n offball-ingest-kr2610 --resource-type microsoft.insights/components \
+AI_CONN=$(az resource show -g "$RG" -n "offball-ingest-$SUFFIX" --resource-type microsoft.insights/components \
   --query properties.ConnectionString -o tsv)
 
 BODY=$(mktemp)
@@ -32,7 +34,7 @@ trap 'rm -f "$BODY"' EXIT
 python3 - "$BODY" <<EOF
 import json, sys
 body = {
-  "location": "westus2",
+  "location": "$LOC",
   "identity": {"type": "UserAssigned", "userAssignedIdentities": {"$ID_RES": {}}},
   "properties": {
     "environmentId": "$ENV_ID",
@@ -49,8 +51,8 @@ body = {
         "resources": {"cpu": 0.5, "memory": "1Gi"},
         "env": [
           {"name": "AZURE_CLIENT_ID", "value": "$ID_CLIENT"},
-          {"name": "EVENTHUB_NAMESPACE", "value": "offball-eh-kr2610.servicebus.windows.net"},
-          {"name": "STORAGE_ACCOUNT_URL", "value": "https://offballstkr2610.blob.core.windows.net"},
+          {"name": "EVENTHUB_NAMESPACE", "value": "offball-eh-$SUFFIX.servicebus.windows.net"},
+          {"name": "STORAGE_ACCOUNT_URL", "value": "https://offballst$SUFFIX.blob.core.windows.net"},
           {"name": "COSMOS_ENDPOINT", "value": "$COSMOS"},
           {"name": "APPLICATIONINSIGHTS_CONNECTION_STRING", "secretRef": "appinsights"},
         ],

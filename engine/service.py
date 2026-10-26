@@ -21,7 +21,26 @@ from engine.core import EngineCore
 from engine.store_azure import AzureStore, BlobSnapshots
 
 CHECKPOINT_EVERY_S = 5.0
+COUNTS_EVERY_S = 30.0
 log = logging.getLogger("offball.engine")
+
+
+def setup_logging() -> None:
+    """Logs to stdout and, when APPLICATIONINSIGHTS_CONNECTION_STRING is set, to Application
+    Insights as role `offball-engine`: our own logs at INFO, every other library at WARNING
+    (so Azure SDK sign-in or permission errors show up too)."""
+    logging.basicConfig(level=logging.WARNING,
+                        format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    logging.getLogger("offball").setLevel(logging.INFO)
+    if not os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"):
+        return
+    os.environ.setdefault("OTEL_SERVICE_NAME", "offball-engine")
+    # Skip the Azure VM metadata probe: there is no VM endpoint on Container Apps, and the
+    # failed probe was being logged as an exception
+    os.environ.setdefault("OTEL_EXPERIMENTAL_RESOURCE_DETECTORS", "otel")
+    from azure.monitor.opentelemetry import configure_azure_monitor
+
+    configure_azure_monitor(logger_name="")
 
 
 def _props(event) -> dict:
@@ -30,11 +49,7 @@ def _props(event) -> dict:
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    if os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"):
-        from azure.monitor.opentelemetry import configure_azure_monitor
-
-        configure_azure_monitor(logger_name="offball")
+    setup_logging()
 
     cred = ManagedIdentityCredential(client_id=os.environ["AZURE_CLIENT_ID"])
     account = os.environ["STORAGE_ACCOUNT_URL"]
@@ -65,20 +80,30 @@ def main() -> None:
                 last_checkpoint["t"] = time.monotonic()
 
     def ticker() -> None:
+        logged: dict[str, dict] = {}
+        last_counts = time.monotonic()
         while True:
             time.sleep(1)
-            with lock:
-                if core.tick(time.time() * 1000):
-                    core.checkpoint()
-            for match_id, stage in list(core.stages.items()):
-                log.info("match %s counts %s", match_id, dict(stage.counts))
+            try:
+                with lock:
+                    if core.tick(time.time() * 1000):
+                        core.checkpoint()
+                if time.monotonic() - last_counts >= COUNTS_EVERY_S:
+                    last_counts = time.monotonic()
+                    for match_id, stage in list(core.stages.items()):
+                        counts = dict(stage.counts) | {"clock_offset_ms": stage.offset_ms}
+                        if counts != logged.get(match_id):
+                            logged[match_id] = counts
+                            log.info("match %s counts %s", match_id, counts)
+            except Exception:
+                log.exception("engine timer failed")
 
     threading.Thread(target=ticker, daemon=True).start()
     client = EventHubConsumerClient(
         fully_qualified_namespace=os.environ["EVENTHUB_NAMESPACE"], eventhub_name="normalized",
         consumer_group="engine", credential=cred,
         checkpoint_store=BlobCheckpointStore(account, "checkpoints", credential=cred))
-    log.info("engine listening on normalized")
+    log.info("engine listening on normalized (consumer group engine)")
     with client:
         client.receive_batch(on_event_batch=on_batch, max_batch_size=200, max_wait_time=1,
                              starting_position="-1")
