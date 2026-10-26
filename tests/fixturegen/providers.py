@@ -72,10 +72,12 @@ def feed_a_event(ev: dict, offset_ms: int) -> dict:
     if ev["start"]:
         body["x"], body["y"] = to_grid(ev["start"], period)
     quals = []
-    if t == "pass":
+    if ev["end"]:
         ex, ey = to_grid(ev["end"], period)
-        quals += [{"qualifierId": 140, "value": str(ex)}, {"qualifierId": 141, "value": str(ey)},
-                  {"qualifierId": 7, "value": str(provider_player_id(ev["target_player_id"]))}]
+        quals += [{"qualifierId": 140, "value": str(ex)}, {"qualifierId": 141, "value": str(ey)}]
+    if t == "pass":
+        quals.append(
+            {"qualifierId": 7, "value": str(provider_player_id(ev["target_player_id"]))})
         if "long_ball" in ev["qualifiers"]:
             quals.append({"qualifierId": 1, "value": "1"})
     if t == "card":
