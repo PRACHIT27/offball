@@ -212,6 +212,7 @@ def normalize_b(body: str | bytes, props: dict, sheet: TeamSheet | None, now: st
 
     base = PERIOD_BASE_MS[msg.periodId]
     sign = 1 if msg.periodId == 1 else -1  # teams switch ends at half-time
+    shirts = sheet.feed_b_shirts()
     frames = []
     try:
         for fr in msg.frames:
@@ -219,12 +220,15 @@ def normalize_b(body: str | bytes, props: dict, sheet: TeamSheet | None, now: st
             if n < 0:
                 raise Unmappable(f"frameIdx {fr.frameIdx} before period start")
             bx, by, bz = fr.ball
-            players = [
-                PlayerPosition(player_id=sheet.player_from_feed_b(side, shirt),
-                               x=round(52.5 + sign * x / 100, 3), y=round(34 + sign * y / 100, 3))
-                for side, rows in (("home", fr.home), ("away", fr.away))
-                for shirt, x, y in rows
-            ]
+            players = []
+            for side, rows in (("home", fr.home), ("away", fr.away)):
+                for shirt, x, y in rows:
+                    if (side, shirt) not in shirts:
+                        raise UnknownId(f"feed B {side} shirt {shirt} not on team sheet")
+                    # Values come from the validated raw batch, so skip re-validation
+                    players.append(PlayerPosition.model_construct(
+                        player_id=shirts[(side, shirt)], x=round(52.5 + sign * x / 100, 3),
+                        y=round(34 + sign * y / 100, 3)))
             frames.append(CleanFrame(
                 frame=n, match_clock_ms=base + n * FRAME_MS,
                 ball=Point3(x=round(52.5 + sign * bx / 100, 3), y=round(34 + sign * by / 100, 3),

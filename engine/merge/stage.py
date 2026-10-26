@@ -80,6 +80,12 @@ class MergeStage:
     def handle(self, msg: NormalizedMessage, wall_ms: float) -> list[MergeOutput]:
         now = wall_iso(wall_ms)
         self._expire(wall_ms)
+        if isinstance(msg, NormalizedFrames):
+            self.health.period_seen(msg.batch.period)
+        elif isinstance(msg, NormalizedEvent) and msg.event.type == "period_start":
+            self.health.period_seen(msg.event.period)
+        elif isinstance(msg, NormalizedEvent) and msg.event.type == "period_end":
+            self.health.period_ended(msg.event.period)
         health = self.health.on_message("B" if isinstance(msg, NormalizedFrames) else "A", wall_ms)
         match msg:
             case NormalizedPrematch():

@@ -60,3 +60,11 @@ def score(outputs, key: dict) -> Score:
                if i not in latest or latest[i].status != "active" or not _same(latest[i], t)]
     extra = [i for i, ev in latest.items() if i not in truth and ev.status == "active"]
     return Score(len(truth) - len(missing), len(truth), extra, missing)
+
+
+def score_store(store, key: dict) -> Score:
+    """Score what a run stored (all versions) instead of its in-memory outputs."""
+    from ingest.clean import CleanEvent
+
+    events = [EventUpsert(event=CleanEvent.model_validate(d)) for d in store.events.values()]
+    return score(events, key)

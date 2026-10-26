@@ -66,6 +66,10 @@ class TeamSheet(BaseModel):
         except KeyError:
             raise UnknownId(f"feed A teamId {provider_team_id} not in lineup") from None
 
+    def feed_b_shirts(self) -> dict[tuple[Side, int], str]:
+        """Plain dict for hot loops: (side, shirt) → player_id."""
+        return self._by_shirt
+
     def player_from_feed_b(self, side: Side, shirt: int) -> str:
         try:
             return self._by_shirt[(side, shirt)]
