@@ -93,3 +93,14 @@ def test_jump_in_position_is_not_running():
     run(e, batches(frames))
     c = e.roster.col["RIV-07"]
     assert e.totals.distance[c] == 0.0 and e.totals.top_speed[c] == 0.0
+
+
+def test_stray_player_ids_beyond_the_roster_are_dropped_not_fatal():
+    from engine.metrics.memory import MAX_PLAYERS
+
+    e = engine()
+    crowd = {f"ZZZ-{i:03d}": (50.0, 34.0) for i in range(MAX_PLAYERS + 10)}
+    frames = [frame(n, crowd | {"RIV-07": (10.0 + 0.2 * n, 20.0)}) for n in range(50)]
+    run(e, batches(frames))  # must not raise
+    assert len(e.roster.ids) == MAX_PLAYERS and e.roster.dropped > 0
+    assert e.totals.distance[e.roster.col["RIV-07"]] > 0  # listed in the prematch: kept

@@ -30,12 +30,17 @@ class Roster:
         self.ids: list[str] = []
         self.teams: list[str] = []
         self.col: dict[str, int] = {}
+        # Positions dropped because the roster was full (a count, so stray IDs can't grow memory)
+        self.dropped = 0
 
-    def column(self, player_id: str) -> int:
+    def column(self, player_id: str) -> int | None:
+        """The player's column; None once MAX_PLAYERS are taken. A feed sending stray IDs then
+        loses only those players, instead of failing every later message for the match."""
         c = self.col.get(player_id)
         if c is None:
             if len(self.ids) >= MAX_PLAYERS:
-                raise ValueError(f"more than {MAX_PLAYERS} players seen")
+                self.dropped += 1
+                return None
             c = self.col[player_id] = len(self.ids)
             self.ids.append(player_id)
             self.teams.append(team_of(player_id))
@@ -114,7 +119,9 @@ class FrameMemory:
         self.ball[s] = (f.ball.x, f.ball.y, f.ball.z)
         self.pos[s] = np.nan
         for p in f.players:
-            self.pos[s, self.roster.column(p.player_id)] = (p.x, p.y)
+            c = self.roster.column(p.player_id)
+            if c is not None:
+                self.pos[s, c] = (p.x, p.y)
         here = ~np.isnan(self.pos[s]).any(axis=1)
         if prev is None:
             self.seg_count[here] += 1

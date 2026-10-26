@@ -242,6 +242,8 @@ class EventProcessor:
     def _add(self, added: dict[str, dict[str, float]], sign: int = 1) -> None:
         for pid, fields in added.items():
             c = self.roster.column(pid)
+            if c is None:
+                continue
             for name, amount in fields.items():
                 getattr(self.totals, name)[c] += sign * amount
 
