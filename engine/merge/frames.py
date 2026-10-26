@@ -1,8 +1,45 @@
-"""Frame path of the merge stage (LLD §6.2): dedupe by frame number, fill short gaps."""
+"""Frame path of the merge stage (LLD §6.2): fix units, dedupe by frame number, fill short gaps."""
 
 from ingest.clean import FRAME_MS, CleanFrame, CleanFrameBatch, PlayerPosition, Point3
 
 MAX_FILL_FRAMES = 12  # ≤ 0.5 s at 25 Hz is interpolated; longer gaps are announced
+HALF = (52.5, 34.0)
+UNIT_FACTOR = 100
+OFF_PITCH = 5.0  # positions this many half-pitches from the centre are a unit mistake
+
+
+def _reach(batch: CleanFrameBatch) -> float:
+    """How far the batch reaches from the centre, in half-pitch lengths (1.0 = touchline)."""
+    worst = 0.0
+    for f in batch.frames:
+        for x, y in [(f.ball.x, f.ball.y), *((p.x, p.y) for p in f.players)]:
+            worst = max(worst, abs(x - HALF[0]) / HALF[0], abs(y - HALF[1]) / HALF[1])
+    return worst
+
+
+def _rescale(batch: CleanFrameBatch) -> CleanFrameBatch:
+    def fix(x: float, y: float) -> tuple[float, float]:
+        return (round(HALF[0] + (x - HALF[0]) / UNIT_FACTOR, 3),
+                round(HALF[1] + (y - HALF[1]) / UNIT_FACTOR, 3))
+
+    frames = []
+    for f in batch.frames:
+        bx, by = fix(f.ball.x, f.ball.y)
+        players = [PlayerPosition(player_id=p.player_id, x=fx, y=fy)
+                   for p in f.players for fx, fy in [fix(p.x, p.y)]]
+        frames.append(f.model_copy(update={"ball": f.ball.model_copy(update={"x": bx, "y": by}),
+                                           "players": players}))
+    return batch.model_copy(update={"frames": frames})
+
+
+def fix_units(batch: CleanFrameBatch) -> tuple[CleanFrameBatch | None, dict]:
+    """Rescale a batch sent in the wrong units (FR-16); reject it if rescaling doesn't help."""
+    if _reach(batch) <= OFF_PITCH:
+        return batch, {}
+    fixed = _rescale(batch)
+    if _reach(fixed) <= 1.2:
+        return fixed, {"units_fixed": 1}
+    return None, {"frames_rejected": len(batch.frames)}
 
 
 def _lerp(a: float, b: float, s: float) -> float:
@@ -38,10 +75,13 @@ class FrameTrack:
 
     def handle(self, batch: CleanFrameBatch) -> tuple[CleanFrameBatch | None, dict, list[dict]]:
         """Returns the batch to hand on (None if nothing new), counts, and gap notices."""
+        batch, counts = fix_units(batch)
+        if batch is None:
+            return None, counts, []
         prev = self.last.get(batch.period)
         last_no = prev.frame if prev else -1
         fresh = [f for f in batch.frames if f.frame > last_no]
-        counts = {"frames_duplicate": len(batch.frames) - len(fresh)}
+        counts["frames_duplicate"] = len(batch.frames) - len(fresh)
         if not fresh:
             return None, counts, []
 
