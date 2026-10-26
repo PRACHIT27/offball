@@ -81,7 +81,7 @@ def _run_engine(hub, root, crash_at=None):
             restarted = True
         core.handle(body, headers, parse_wall(headers["emitted_at"]))
     end = parse_wall(hub[-1][1]["emitted_at"])
-    core.tick(end + 10_000, wall_ms=end)
+    core.tick(end + 10_000)
     core.checkpoint()
     assert restarted == (crash_at is not None)
 

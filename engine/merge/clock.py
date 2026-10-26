@@ -15,7 +15,8 @@ import numpy as np
 from ingest.clean import FRAME_MS, CleanEvent, CleanFrame
 
 WINDOW_MS = 3_000
-HISTORY_MS = 20_000
+# Long enough for anchors when one feed runs well behind the other
+HISTORY_MS = 120_000
 MEDIAN_OF = 30
 NEAR_M = 2.5
 MIN_JUMP_MS = 6.0  # m/s
