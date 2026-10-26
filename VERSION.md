@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v1.2.0`**
+**Doc set version: `v2.1.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -36,18 +36,32 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 
 ## Log
 
-## v1.2.0 · 2026-10-26 · Archit
+## v2.1.0 · 2026-10-26 · Archit
 **Files:** CLAUDE.md, VERSION.md
 **Type:** MINOR
 - Performance Metrics is built on branch `performance-metrics` (on top of the Data Ingestion work): every Must in its design plus completion vs expected and heatmaps; pressure seconds and fatigue are not built. Local mode, the Azure path (`stats` hub, Cosmos `metrics`, wired into `engine/service.py`), and truth, delay, restart and Azure-path tests.
+- Merged `main` (Data Ingestion v2.0.0): metrics plugs into the async engine in `engine/service.py` and consumes the proposed `contracts/ingestion` v1.0.0 as is, so Performance Metrics agrees to it.
 - CLAUDE.md gains a "Lane 1: Performance Metrics" section. Message shapes and per-teammate notes are in `engine/metrics/README.md`; they are not yet in `contracts/`.
 - Decisions beyond the design: movement over 12 m/s is a tracking jump, not running; the best-option arrow shows below a 0.4 decision score; raw positions travel on `stats` as `positions`; number-only cues travel on `stats` with property `type=cue`.
 - **Action required:**
   - Tactical Intelligence: confirm or change `PressureSample` / `PassValues` (direct call) before building on them.
   - Insight Generation: the Stats API reads Cosmos `metrics` (totals are cumulative; keep the highest event version).
   - Broadcast / Audience: consume `stats` by the `type` and `kind` properties; the shapes are in the README.
-  - Platform / Data Ingestion: create the `stats` hub, its consumer groups and Cosmos `metrics`, and grant the engine identity (commands in the README; nothing has been created). Until then run the engine with `METRICS_ENABLED=0`.
+  - Platform / Data Ingestion: beyond `azure-setup.sh`, create the `stats` hub, its consumer groups and Cosmos `metrics`, and grant `id-engine` Data Sender on `stats` and the Cosmos role on `metrics` (commands in the README; nothing has been created). Until then run the engine with `METRICS_ENABLED=0`.
   - Match Simulation: send `provider_xg` on every shot.
+
+## v2.0.0 · 2026-10-26 · Kanika
+**Files:** contracts/README.md (new), contracts/ingestion/*.schema.json (new), CLAUDE.md, VERSION.md
+**Type:** MAJOR
+- **Proposed** Data Ingestion contract v1.0.0 in `contracts/ingestion/`: clean event, clean frame batch, pre-match info, and the merge outputs (`event.upsert`, `event.delete`, `frames`, `prematch` and the notices). JSON Schema generated from the Pydantic models (`python -m engine.contracts`); a test fails if they drift.
+- `contracts/README.md` lists the rules consumers can rely on (clock, pitch, corrections, release order, gap fill) and every notice's `details`.
+- Data Ingestion is merged to `main` (PR #2). The engine now uses the async Event Hubs client.
+- **Action required:** Lanes 2 and 3 review `contracts/README.md` and agree or ask for changes; until then it is a proposal. The performance-metrics branch merges `main` (expect a conflict in `engine/service.py`).
+
+## v1.1.1 · 2026-10-26 · Kanika
+**Files:** CLAUDE.md, VERSION.md
+**Type:** PATCH
+- Lane 1 section: full Azure resource list (identities, registry, engine app, extra containers), deploy / stop / start / replay commands, where engine logs are, and the before-the-demo always-ready step. The Python 3.12 open item is closed.
 
 ## v1.1.0 · 2026-10-26 · Kanika
 **Files:** CLAUDE.md, VERSION.md, .githooks/pre-commit (now executable)

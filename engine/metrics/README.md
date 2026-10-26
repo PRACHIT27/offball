@@ -132,12 +132,14 @@ A stats message carries `version` and `status`. A corrected pass is sent again w
 
 ### Platform (and whoever runs `az`)
 
-The engine needs two new resources and two roles in `offball-rg`. The commands are below. **They
-have not been run**: ask the owner first, as the Lane 1 rules require.
+Kanika's `azure-setup.sh` already creates `id-engine` and its roles for the merge stage. Its Cosmos
+role is scoped to `events` only. Metrics needs two more resources and two more roles in
+`offball-rg`, and the commands are below. **They have not been run**: ask the owner first, as the
+Lane 1 rules require. They could also go into `azure-setup.sh` step 10.
 
 ```sh
 RG=offball-rg; EH=offball-eh-kr2610; COSMOS=offball-cosmos-kr2610
-ENGINE_PRINCIPAL_ID=<object id of the engine's managed identity (id-engine)>
+ENGINE_PRINCIPAL_ID=$(az identity show -g $RG -n id-engine --query principalId -o tsv)
 
 # stats hub: the engine sends; the PubSub bridge, cue manager and Fabric each read with their own group
 az eventhubs eventhub create -g $RG --namespace-name $EH --name stats \
@@ -167,8 +169,18 @@ az cosmosdb sql role assignment create -g $RG --account-name $COSMOS \
 
 ### Data Ingestion (Kanika)
 
-- `engine/service.py` now builds `MetricsRouter` and passes it as `EngineCore(router=…)`.
-  It calls `metrics.checkpoint()` right after `core.checkpoint()`.
+- **Contract:** metrics consumes the proposed `contracts/ingestion` v1.0.0 as is. Performance
+  Metrics agrees to it.
+- **`engine/service.py`** (your async version) now builds `MetricsRouter` and passes it as
+  `EngineCore(router=…)`.
+  - Metrics runs inside `core.handle`, in your worker thread, so its sends block like your Cosmos
+    and Blob calls.
+  - Both checkpoint calls go through `checkpoint()`, which runs `core.checkpoint()` and then
+    `metrics.checkpoint()`.
+- **Deploying:** your deployed engine runs `main`, which has no metrics. If you deploy
+  `performance-metrics` before the `stats` hub and Cosmos `metrics` exist, add
+  `{"name": "METRICS_ENABLED", "value": "0"}` to the env list in `scripts/deploy_engine.sh`.
+  Otherwise every send fails and fills the logs.
 - **No change to `engine/core.py`.** `BlobSnapshots` in `engine/store_azure.py` gained a `prefix`
   argument (default `engine`, so merge-stage snapshots don't move). Metrics uses `metrics`, so the
   two can never overwrite each other.

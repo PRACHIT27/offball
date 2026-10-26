@@ -140,6 +140,7 @@ class MergeStage:
     def _event(self, ev: CleanEvent, wall_ms: float, now: str) -> list[MergeOutput]:
         if self._dedupe(f"E:{ev.event_id}:{ev.version}", wall_ms):
             return []
+        ev = ev.model_copy(update={"timings": {**ev.timings, "received_at": now}})
         prev = self.latest.get(ev.event_id)
         if (prev and ev.version <= prev.version) or ev.version <= self.tombstones.get(
                 ev.event_id, 0):
@@ -280,7 +281,8 @@ class MergeStage:
         m.seq = state["seq"]
         m.seen = state["seen"]
         m.watermark = tuple(state["watermark"])
-        m.held_since = state["held_since"]
+        # Fields added after the first deployment: snapshots from older engines lack them
+        m.held_since = state.get("held_since")
         m.frames = FrameTrack.from_state(state["frames"])
         m.clock = ClockAligner.from_state(state["clock"])
         m.health = FeedHealth.from_state(state["health"])

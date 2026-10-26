@@ -8,7 +8,7 @@ from typing import Protocol
 from pydantic import TypeAdapter
 
 from engine.merge.outputs import MergeOutput
-from engine.merge.stage import MergeStage
+from engine.merge.stage import MergeStage, parse_wall
 from ingest.clean import NormalizedMessage
 
 normalized_adapter: TypeAdapter[NormalizedMessage] = TypeAdapter(NormalizedMessage)
@@ -37,6 +37,8 @@ class EngineCore:
         self.stages: dict[str, MergeStage] = {}
         self.stores: dict[str, SilverStore] = {}
         self.last_seen: dict[str, float] = {}
+        # Normalizer → engine arrival lag per feed (ms), for the delay report; drained by the caller
+        self.arrival_lag: dict[str, list[float]] = {"A": [], "B": []}
 
     def _stage(self, match_id: str) -> MergeStage:
         if match_id not in self.stages:
@@ -49,6 +51,11 @@ class EngineCore:
     def handle(self, body: str | bytes, props: dict, now_ms: float) -> list[MergeOutput]:
         msg = normalized_adapter.validate_json(body)
         match_id = props["match_id"]
+        timings = (msg.batch.timings if msg.kind == "frames" else msg.event.timings
+                   if msg.kind == "event" else getattr(msg, "timings", {}))
+        if timings.get("normalized_at"):
+            feed = "B" if msg.kind == "frames" else "A"
+            self.arrival_lag[feed].append(now_ms - parse_wall(timings["normalized_at"]))
         stage = self._stage(match_id)
         # Arrival time, not the provider's send time: feed health is judged on what actually
         # reaches the engine, and merged_at records when the merge really happened (FR-25)

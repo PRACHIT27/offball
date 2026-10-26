@@ -48,6 +48,7 @@ When a question touches rules, eligibility, prizes or submission, fetch the live
 | [docs/design/lld-audience.md](docs/design/lld-audience.md) | Low-level design: Audience (approved) |
 | [docs/design/lld-platform.md](docs/design/lld-platform.md) | Low-level design: Platform (approved) |
 | `docs/design/lld-*.md` | One low-level design per domain, added as each is approved |
+| [contracts/README.md](contracts/README.md) | Shared schemas between lanes; ingestion's clean event and frame (proposed v1.0.0) |
 | [VERSION.md](VERSION.md) | Change log for governed files. Read the newest entries before you start |
 
 ## Rules that bite
@@ -107,18 +108,29 @@ Rules for any session building Data Ingestion (`ingest/` normalizers, `engine/` 
 | Azure changes | Ask before creating, changing or deleting any Azure resource |
 | Local mode | `python -m tests.fixturegen --out local_feeds/fx01 --mess light`, then `python -m engine.local --feeds local_feeds/fx01/feeds --out local_out --match fx01` |
 
-**Azure resources that already exist** (resource group `offball-rg`, region `westus2`):
+**Azure resources** (resource group `offball-rg`, region `westus2`; `bash azure-setup.sh` rebuilds all of it):
 
 | Resource | Name |
 |---|---|
 | Event Hubs namespace (Standard) | `offball-eh-kr2610`: hubs `raw-events`, `raw-tracking` (Capture on → `bronze`), `normalized`; consumer groups `ingest`, `ingest`, `engine` |
-| Storage, data (hierarchical namespace) | `offballstkr2610`: containers `bronze`, `silver-frames`, `dead-letter` |
+| Storage, data (hierarchical namespace) | `offballstkr2610`: containers `bronze`, `silver-frames`, `dead-letter`, `checkpoints`, `teamsheets` |
 | Cosmos DB (serverless) | `offball-cosmos-kr2610`: database `offball`, container `events` (partition `/match_id`) |
-| Function App (Flex Consumption) | `offball-ingest-kr2610`, plan `ASP-offballrg-7469`, storage `offballfnkr2610`, Application Insights `offball-ingest-kr2610` |
-| Container Apps environment | `offball-env` (express, no log destination) |
+| Function App (Flex Consumption, Python 3.12) | `offball-ingest-kr2610`: normalizers `normalize_feed_a`, `normalize_feed_b` as `id-ingest`; plan `ASP-offballrg-7469`, storage `offballfnkr2610`, Application Insights `offball-ingest-kr2610` |
+| Container Apps | environment `offball-env` (express, no log destination); app `offball-engine` (1 replica) as `id-engine` |
+| Container registry | `offballacrkr2610` (image `offball-engine`) |
+| Managed identities | `id-ingest`, `id-engine`, least-privilege roles per LLD §10 |
 
-**Open item:** `offball-ingest-kr2610` was created with Python 3.11. Switch its runtime to 3.12,
-asking the owner before running the command.
+| Task | Command |
+|---|---|
+| Deploy normalizers | `scripts/build_functionapp.sh && (cd build/functionapp && func azure functionapp publish offball-ingest-kr2610 --python)` |
+| Deploy engine (Docker running) | `scripts/deploy_engine.sh` |
+| Stop / start engine | `scripts/engine.sh stop` / `scripts/engine.sh start` |
+| Replay a fixture into Azure | `python -m tests.fixturegen.stream --feeds local_feeds/fx01/feeds --speed 10` |
+| Engine logs | Application Insights `offball-ingest-kr2610`, `cloud_RoleName == "offball-engine"` |
+
+**Before the demo:** turn on one always-ready normalizer instance (off during build to save cost):
+`az functionapp scale config always-ready set -g offball-rg -n offball-ingest-kr2610 --settings function:normalize_feed_b=1`.
+Afterwards: `az functionapp scale config always-ready delete -g offball-rg -n offball-ingest-kr2610 --setting-names function:normalize_feed_b`.
 
 ## Lane 1: Performance Metrics
 
@@ -142,6 +154,6 @@ teammate: [engine/metrics/README.md](engine/metrics/README.md).
 | Tactical Intelligence | `PressureSample` per frame and `PassValues` per pass, by direct call; `pressure()`, `pitch_value()`; shared `FrameMemory` | README §Tactical Intelligence, `engine/metrics/models.py` |
 | Insight Generation (Stats API, MCP) | Cosmos `metrics`: cumulative `player:{id}:{clock}` totals, `event:{id}:{version}` results | README §Insight Generation |
 | Broadcast, Audience | `stats` hub: `positions`, `player_totals`, `heatmap`, `pass`, `shot`, `xg`; number-only cues with `type=cue` | README §Broadcast and Audience |
-| Platform | `stats` hub + consumer groups, Cosmos `metrics`, roles for the engine identity | README §Platform |
+| Platform | Beyond `azure-setup.sh`: `stats` hub + consumer groups, Cosmos `metrics`, Data Sender on `stats` and the Cosmos role on `metrics` for `id-engine` | README §Platform |
 | Data Ingestion | `EngineCore(router=MetricsRouter)` in `engine/service.py` | README §Data Ingestion |
 | Match Simulation | `provider_xg` on every shot; realistic acceleration | README §Match Simulation |
