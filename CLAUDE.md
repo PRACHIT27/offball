@@ -88,3 +88,33 @@ When a question touches rules, eligibility, prizes or submission, fetch the live
 - Changing a governed file (top-level docs, `docs/design/*.md`, `contracts/`) needs a VERSION.md
   entry in the same commit. The hook blocks it otherwise.
 - Contracts change only if all three agree.
+
+## Lane 1: Data Ingestion
+
+Rules for any session building Data Ingestion (`ingest/` normalizers, `engine/` merge stage).
+
+| Rule | Detail |
+|---|---|
+| Design | Build exactly as [lld-data-ingestion.md](docs/design/lld-data-ingestion.md) specifies, except the two deviations below |
+| Deviation: storage | Blob Storage instead of OneLake: Bronze via Capture to `bronze`, Silver frames as Parquet in `silver-frames` |
+| Deviation: validation | Validate with Pydantic models only; no Event Hubs Schema Registry |
+| Python | 3.12 in `.venv` (`python3.12 -m venv .venv`); Pydantic; pytest |
+| Local first | Build local mode (FR-29) first; everything must run from files with no Azure |
+| Plain functions | Keep logic in plain functions; Azure Functions and the engine only call them |
+| Mess levels | Build the `light` mess level first; `full` last |
+| Raw feed formats | Feed A and Feed B wire formats are not in the LLD: propose them and wait for the owner's OK before building |
+| Data and secrets | Fictional clubs and players only. Never commit or print secrets from `.env` |
+| Azure changes | Ask before creating, changing or deleting any Azure resource |
+
+**Azure resources that already exist** (resource group `offball-rg`, region `westus2`):
+
+| Resource | Name |
+|---|---|
+| Event Hubs namespace (Standard) | `offball-eh-kr2610`: hubs `raw-events`, `raw-tracking` (Capture on → `bronze`), `normalized`; consumer groups `ingest`, `ingest`, `engine` |
+| Storage, data (hierarchical namespace) | `offballstkr2610`: containers `bronze`, `silver-frames`, `dead-letter` |
+| Cosmos DB (serverless) | `offball-cosmos-kr2610`: database `offball`, container `events` (partition `/match_id`) |
+| Function App (Flex Consumption) | `offball-ingest-kr2610`, plan `ASP-offballrg-7469`, storage `offballfnkr2610`, Application Insights `offball-ingest-kr2610` |
+| Container Apps environment | `offball-env` (express, no log destination) |
+
+**Open item:** `offball-ingest-kr2610` was created with Python 3.11. Switch its runtime to 3.12,
+asking the owner before running the command.
