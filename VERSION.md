@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v0.7.1`**
+**Doc set version: `v1.1.1`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,29 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v1.1.1 · 2026-10-26 · Kanika
+**Files:** CLAUDE.md, VERSION.md
+**Type:** PATCH
+- Lane 1 section: full Azure resource list (identities, registry, engine app, extra containers), deploy / stop / start / replay commands, where engine logs are, and the before-the-demo always-ready step. The Python 3.12 open item is closed.
+
+## v1.1.0 · 2026-10-26 · Kanika
+**Files:** CLAUDE.md, VERSION.md, .githooks/pre-commit (now executable)
+**Type:** MINOR
+- Data Ingestion local mode is built (`ingest/`, `engine/merge/`, `engine/local.py`); CLAUDE.md gains the setup (uv) and local-mode commands.
+- Build decisions on top of the ingestion design: feed A counts as stopped after 60 s of silence (feed B 3 s, as designed), because feed A is naturally quiet for 20–45 s after goals and stoppages; feed health is only judged while the ball is in play; feed A events wait up to 10 s for the first clock anchor at the start of a match; gap start and end notices are sent together when frames resume.
+- Clean format additions not yet in `contracts/`: `details` (conditions, stoppage), `timings` (per-stage timestamps), frame numbers count from each period's start, and the clean event `type` list in ingestion §13.1.
+- The pre-commit hook was not executable, so git skipped it for everyone; it is now.
+- **Action required:** run `git config core.hooksPath .githooks` once per clone if you haven't.
+
+## v1.0.0 · 2026-10-25 · Kanika
+**Files:** CLAUDE.md, docs/design/lld-data-ingestion.md, VERSION.md
+**Type:** MAJOR
+- CLAUDE.md gains a "Lane 1: Data Ingestion" section: build rules, the Azure resources that already exist in `offball-rg` (westus2), and the open Function App runtime item.
+- Ingestion design adds §13: raw Feed A and Feed B wire formats, the match clock (period 2 starts at 2,700,000 ms) and the team sheet.
+- Architecture deviations for Data Ingestion, recorded here instead of in the designs: **Blob Storage instead of OneLake** (Bronze via Capture to `bronze`, Silver frames as Parquet in `silver-frames`, the fallback the Platform design already allows) and **Pydantic validation only, no Event Hubs Schema Registry** (affects Platform PL-4).
+- Clean event and frame schemas stay as Pydantic models in `engine/` until all three agree to publish them in `contracts/`.
+- **Action required:** Lane 2 drops Schema Registry from PL-4 for the ingestion hubs. Match Simulation's provider writers follow ingestion §13.
 
 ## v0.7.1 · 2026-10-23 · Prachit
 **Files:** README.md, docs/design/hld.md, docs/design/diagrams/architecture.svg (new), VERSION.md

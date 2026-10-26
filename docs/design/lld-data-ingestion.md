@@ -206,3 +206,74 @@ async def on_message(partition_context, raw):
 | Fri | Merge stage: dedupe, order, corrections; Cosmos and OneLake writes |
 | Sat | Clock alignment, gap fill, feed health; Capture on; deployed on Azure |
 | Sun | All mess rules tested; recovery score in CI |
+
+## 13. Appendix: raw feed formats
+
+Wire formats for the two emulated providers, agreed by Lane 1 on 2026-10-25. They follow
+[Match Simulation §5](lld-match-simulation.md#5-provider-emulator). Only the simulator's provider
+writers and the normalizers see these; everything after Data Ingestion sees the clean format (§7).
+
+Every message carries Event Hubs properties `emitted_at` (UTC, ms), `feed` (`A`/`B`) and `match_id`.
+Both feeds report absolute pitch positions with the home team attacking toward +x in period 1; teams
+switch ends at half-time, so the normalizers flip every position in period 2.
+
+**Match clock:** `match_clock_ms` = period base + time within the period. Period bases: 1 → 0,
+2 → 2,700,000 (45:00). Stoppage time can repeat clock values across halves; `period` disambiguates.
+
+### 13.1 Feed A (event style)
+
+One JSON message per item. `msgType` is `prematch`, `lineup`, `event` or `delete`.
+
+```json
+{"msgType":"prematch","matchId":"m001","prematch":{ "…": "prematch.json, passed through (FR-22)" }}
+{"msgType":"lineup","matchId":"m001","teams":[{"teamId":101,"side":"home","players":[{"playerId":50707,"shirt":7}]}]}
+{"msgType":"event","matchId":"m001","eventId":4512,"version":1,"typeId":1,"periodId":1,
+ "timeSec":730.62,"teamId":101,"playerId":50707,"outcome":1,"x":45.8,"y":32.9,
+ "qualifiers":[{"qualifierId":140,"value":"67.6"},{"qualifierId":141,"value":"44.4"},{"qualifierId":7,"value":"50710"}],"xG":null}
+{"msgType":"delete","matchId":"m001","eventId":4512,"version":3}
+```
+
+| Field | Meaning |
+|---|---|
+| `x`, `y` | 0–100 grid on both axes; metres = `x × 1.05`, `y × 0.68` |
+| `timeSec` | Seconds since period start, offset by the provider's clock error (0.5–2.0 s) |
+| `outcome` | `1` success, `0` failure |
+| `version` | A correction re-sends the full event with the same `eventId` and a higher `version` |
+| `xG` | Provider xG, shots only |
+
+| `typeId` | Clean `type` | Notes |
+|---|---|---|
+| 1 | `pass` | Qualifiers 140/141 end position, 7 receiver `playerId` |
+| 3 | `take_on` | |
+| 4 | `foul` | |
+| 7 | `tackle` | |
+| 8 | `interception` | |
+| 12 | `clearance` | |
+| 13 / 14 / 15 / 16 | `shot` | `outcome` = `off_target` / `post` / `saved` / `goal` |
+| 17 | `card` | Qualifier 31 `yellow` or `red` |
+| 18 / 19 | `sub_off` / `sub_on` | |
+| 30 / 32 | `period_end` / `period_start` | |
+| 90 | `conditions` | `conditions` object as in Match Simulation §7 |
+| 91 / 92 | `stoppage_start` / `stoppage_end` | `stoppageId`, `reason` |
+
+### 13.2 Feed B (tracking style)
+
+One message per 5 frames (25 Hz).
+
+```json
+{"msgType":"frames","matchId":"m001","batchSeq":3651,"periodId":1,"periodStartFrame":1000,
+ "frames":[{"frameIdx":19255,"ball":[-210,340,25],"home":[[7,1200,-1580]],"away":[[4,-830,410]]}]}
+```
+
+| Field | Meaning |
+|---|---|
+| `ball` | `[x, y, z]` in centimetres, origin at the pitch centre |
+| `home`, `away` | `[shirt, x, y]` in centimetres, origin at the pitch centre |
+| `frameIdx` | Provider frame counter from its own start; `match_clock_ms` = period base + (`frameIdx` − `periodStartFrame`) × 40 |
+| `batchSeq` | Increments per batch; duplicate batches repeat it |
+
+### 13.3 Team sheet
+
+Built from the pre-match team sheets (our `player_id` + shirt number per club) and Feed A's `lineup`
+(provider `playerId` + shirt). Feed A `playerId` and Feed B `(side, shirt)` both map to our
+`player_id` through it; an unknown ID goes to dead-letter (FR-10).
