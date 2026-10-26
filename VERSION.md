@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v1.1.1`**
+**Doc set version: `v2.0.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,14 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.0.0 · 2026-10-26 · Kanika
+**Files:** contracts/README.md (new), contracts/ingestion/*.schema.json (new), CLAUDE.md, VERSION.md
+**Type:** MAJOR
+- **Proposed** Data Ingestion contract v1.0.0 in `contracts/ingestion/`: clean event, clean frame batch, pre-match info, and the merge outputs (`event.upsert`, `event.delete`, `frames`, `prematch` and the notices). JSON Schema generated from the Pydantic models (`python -m engine.contracts`); a test fails if they drift.
+- `contracts/README.md` lists the rules consumers can rely on (clock, pitch, corrections, release order, gap fill) and every notice's `details`.
+- Data Ingestion is merged to `main` (PR #2). The engine now uses the async Event Hubs client.
+- **Action required:** Lanes 2 and 3 review `contracts/README.md` and agree or ask for changes; until then it is a proposal. The performance-metrics branch merges `main` (expect a conflict in `engine/service.py`).
 
 ## v1.1.1 · 2026-10-26 · Kanika
 **Files:** CLAUDE.md, VERSION.md

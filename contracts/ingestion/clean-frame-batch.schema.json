@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/PRACHIT27/offball/blob/main/contracts/ingestion/clean-frame-batch.schema.json",
+  "version": "1.0.0",
+  "$defs": {
+    "CleanFrame": {
+      "additionalProperties": false,
+      "properties": {
+        "frame": {
+          "minimum": 0,
+          "title": "Frame",
+          "type": "integer"
+        },
+        "match_clock_ms": {
+          "title": "Match Clock Ms",
+          "type": "integer"
+        },
+        "ball": {
+          "$ref": "#/$defs/Point3"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/PlayerPosition"
+          },
+          "title": "Players",
+          "type": "array"
+        },
+        "interpolated": {
+          "default": false,
+          "title": "Interpolated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "frame",
+        "match_clock_ms",
+        "ball",
+        "players"
+      ],
+      "title": "CleanFrame",
+      "type": "object"
+    },
+    "PlayerPosition": {
+      "additionalProperties": false,
+      "properties": {
+        "player_id": {
+          "title": "Player Id",
+          "type": "string"
+        },
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "player_id",
+        "x",
+        "y"
+      ],
+      "title": "PlayerPosition",
+      "type": "object"
+    },
+    "Point3": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        },
+        "z": {
+          "title": "Z",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "title": "Point3",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "match_id": {
+      "title": "Match Id",
+      "type": "string"
+    },
+    "period": {
+      "enum": [
+        1,
+        2
+      ],
+      "title": "Period",
+      "type": "integer"
+    },
+    "frames": {
+      "items": {
+        "$ref": "#/$defs/CleanFrame"
+      },
+      "title": "Frames",
+      "type": "array"
+    },
+    "source_ids": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "default": {},
+      "title": "Source Ids",
+      "type": "object"
+    },
+    "emitted_at": {
+      "title": "Emitted At",
+      "type": "string"
+    },
+    "timings": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {},
+      "title": "Timings",
+      "type": "object"
+    }
+  },
+  "required": [
+    "match_id",
+    "period",
+    "frames",
+    "emitted_at"
+  ],
+  "title": "CleanFrameBatch",
+  "type": "object"
+}

@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/PRACHIT27/offball/blob/main/contracts/ingestion/prematch.schema.json",
+  "version": "1.0.0",
+  "$defs": {
+    "PrematchPlayer": {
+      "additionalProperties": true,
+      "properties": {
+        "player_id": {
+          "pattern": "^[A-Z]{3}-\\d{2}$",
+          "title": "Player Id",
+          "type": "string"
+        },
+        "number": {
+          "maximum": 99,
+          "minimum": 1,
+          "title": "Number",
+          "type": "integer"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "position": {
+          "title": "Position",
+          "type": "string"
+        },
+        "starting": {
+          "title": "Starting",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "player_id",
+        "number",
+        "name",
+        "position",
+        "starting"
+      ],
+      "title": "PrematchPlayer",
+      "type": "object"
+    },
+    "PrematchSide": {
+      "additionalProperties": true,
+      "properties": {
+        "club_id": {
+          "pattern": "^[A-Z]{3}$",
+          "title": "Club Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/PrematchPlayer"
+          },
+          "minItems": 11,
+          "title": "Players",
+          "type": "array"
+        }
+      },
+      "required": [
+        "club_id",
+        "name",
+        "players"
+      ],
+      "title": "PrematchSide",
+      "type": "object"
+    }
+  },
+  "additionalProperties": true,
+  "description": "Team sheets plus whatever else the simulator sends (clubs, managers, history).",
+  "properties": {
+    "match_id": {
+      "title": "Match Id",
+      "type": "string"
+    },
+    "home": {
+      "$ref": "#/$defs/PrematchSide"
+    },
+    "away": {
+      "$ref": "#/$defs/PrematchSide"
+    }
+  },
+  "required": [
+    "match_id",
+    "home",
+    "away"
+  ],
+  "title": "Prematch",
+  "type": "object"
+}

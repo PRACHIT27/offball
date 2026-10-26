@@ -48,6 +48,7 @@ When a question touches rules, eligibility, prizes or submission, fetch the live
 | [docs/design/lld-audience.md](docs/design/lld-audience.md) | Low-level design: Audience (approved) |
 | [docs/design/lld-platform.md](docs/design/lld-platform.md) | Low-level design: Platform (approved) |
 | `docs/design/lld-*.md` | One low-level design per domain, added as each is approved |
+| [contracts/README.md](contracts/README.md) | Shared schemas between lanes; ingestion's clean event and frame (proposed v1.0.0) |
 | [VERSION.md](VERSION.md) | Change log for governed files. Read the newest entries before you start |
 
 ## Rules that bite

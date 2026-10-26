@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/PRACHIT27/offball/blob/main/contracts/ingestion/clean-event.schema.json",
+  "version": "1.0.0",
+  "$defs": {
+    "Point": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Point",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "pattern": "^e-\\d{6}$",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "status": {
+      "default": "active",
+      "enum": [
+        "active",
+        "deleted"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "match_id": {
+      "title": "Match Id",
+      "type": "string"
+    },
+    "match_clock_ms": {
+      "title": "Match Clock Ms",
+      "type": "integer"
+    },
+    "period": {
+      "enum": [
+        1,
+        2
+      ],
+      "title": "Period",
+      "type": "integer"
+    },
+    "type": {
+      "enum": [
+        "pass",
+        "take_on",
+        "foul",
+        "tackle",
+        "interception",
+        "clearance",
+        "shot",
+        "card",
+        "sub_off",
+        "sub_on",
+        "period_start",
+        "period_end",
+        "conditions",
+        "stoppage_start",
+        "stoppage_end"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "team_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Team Id"
+    },
+    "player_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Player Id"
+    },
+    "target_player_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Target Player Id"
+    },
+    "start": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Point"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "end": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Point"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Outcome"
+    },
+    "qualifiers": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Qualifiers",
+      "type": "array"
+    },
+    "provider_xg": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Provider Xg"
+    },
+    "details": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Details"
+    },
+    "source_ids": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Source Ids",
+      "type": "object"
+    },
+    "emitted_at": {
+      "title": "Emitted At",
+      "type": "string"
+    },
+    "timings": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {},
+      "title": "Timings",
+      "type": "object"
+    }
+  },
+  "required": [
+    "event_id",
+    "version",
+    "match_id",
+    "match_clock_ms",
+    "period",
+    "type",
+    "source_ids",
+    "emitted_at"
+  ],
+  "title": "CleanEvent",
+  "type": "object"
+}
