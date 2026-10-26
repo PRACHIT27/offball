@@ -71,12 +71,19 @@ def _service():
     return NormalizerService(BlobSheets(), BlobDeadLetters(), publish)
 
 
+def _text(v):
+    return v.decode() if isinstance(v, bytes) else v
+
+
 def _messages(events: list[func.EventHubEvent]) -> list[tuple[bytes, dict]]:
+    """Bodies with their application properties. With cardinality=many every event shares the
+    batch metadata, where event i's properties are PropertiesArray[i]."""
+    meta = (events[0].metadata or {}) if events else {}
+    per_event = meta.get("PropertiesArray") or []
     out = []
-    for e in events:
-        props = {k: (v.decode() if isinstance(v, bytes) else v)
-                 for k, v in (e.metadata.get("Properties") or {}).items()}
-        out.append((e.get_body(), props))
+    for i, e in enumerate(events):
+        props = per_event[i] if i < len(per_event) else (meta.get("Properties") or {})
+        out.append((e.get_body(), {_text(k): _text(v) for k, v in (props or {}).items()}))
     return out
 
 
@@ -88,15 +95,17 @@ def _run(feed: str, events: list[func.EventHubEvent]) -> None:
         raise  # let the host retry the batch
 
 
+# data_type binary: hand bodies over untouched, so a broken record reaches our dead-letter
+# handling instead of failing the host's JSON parsing for the whole batch
 @app.event_hub_message_trigger(arg_name="events", event_hub_name="raw-events",
                                connection="EventHubConnection", consumer_group="ingest",
-                               cardinality="many")
+                               cardinality="many", data_type=func.DataType.BINARY)
 def normalize_feed_a(events: List[func.EventHubEvent]) -> None:  # noqa: UP006
     _run("A", events)
 
 
 @app.event_hub_message_trigger(arg_name="events", event_hub_name="raw-tracking",
                                connection="EventHubConnection", consumer_group="ingest",
-                               cardinality="many")
+                               cardinality="many", data_type=func.DataType.BINARY)
 def normalize_feed_b(events: List[func.EventHubEvent]) -> None:  # noqa: UP006
     _run("B", events)

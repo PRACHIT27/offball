@@ -5,6 +5,7 @@ in-memory fakes.
 """
 
 import hashlib
+import json
 from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Protocol
@@ -36,6 +37,15 @@ def dead_letter_path(dl: DeadLetter) -> str:
     digest = hashlib.sha256(f"{dl.feed}|{dl.body}".encode()).hexdigest()[:12]
     when = (dl.properties.get("emitted_at") or "unknown").replace(":", "-")
     return f"{dl.match_id or 'unknown'}/{dl.stage}/{when}-{digest}.json"
+
+
+def _peek_match_id(body: str | bytes) -> str | None:
+    """Fallback when a message arrives without the match_id property."""
+    try:
+        value = json.loads(body).get("matchId")
+    except (ValueError, AttributeError):
+        return None
+    return value if isinstance(value, str) else None
 
 
 class NormalizerService:
@@ -75,7 +85,9 @@ class NormalizerService:
         return counts
 
     def _one(self, feed: str, body: str | bytes, props: dict) -> Result:
-        match_id = props.get("match_id")
+        match_id = props.get("match_id") or _peek_match_id(body)
+        if match_id and not props.get("match_id"):
+            props = {**props, "match_id": match_id}
         if feed == "A":
             result = normalize_a(body, props, self._sheet(match_id, need_lineup=True), self.now())
             if result.teamsheet is not None:
