@@ -1,0 +1,7 @@
+# Allowlist: only what Dockerfile.engine needs reaches the build (never .env, .venv, feeds)
+*
+!pyproject.toml
+!ingest/
+!engine/
+**/__pycache__
+ingest/functionapp/
