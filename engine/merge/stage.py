@@ -22,8 +22,9 @@ from ingest.clean import (
 )
 
 WAIT_MS = 1_500
-# Before the first clock anchor, feed A events wait up to this long for one
-FIRST_ANCHOR_WAIT_MS = 10_000
+# Before the first clock anchor, feed A events are held; if feed A's own clock moves this far
+# past an event with still no anchor (feed B down), the event is released unaligned
+NO_ANCHOR_GIVE_UP_MS = 60_000
 DEDUPE_WINDOW_MS = 300_000
 EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 EVENT_NOTICES = {"conditions": "conditions.changed", "stoppage_start": "stoppage.start",
@@ -160,7 +161,7 @@ class MergeStage:
             self.counts["corrections"] += 1  # replaced while still in the wait window
 
         key = (ev.period, ev.match_clock_ms - self.offset_ms)
-        if (key[0], key[1] + WAIT_MS) < self.watermark:
+        if self.clock.ready and (key[0], key[1] + WAIT_MS) < self.watermark:
             # Arrived after its wait window closed: release now as a late insert (FR-13)
             self.counts["late_inserts"] += 1
             self.released.add(ev.event_id)
@@ -196,12 +197,18 @@ class MergeStage:
                                      "action": "delete"}))
         return out
 
+    def _due(self, period: int, raw_ms: int) -> bool:
+        if self.clock.ready:
+            return (period, raw_ms - self.offset_ms + WAIT_MS) <= self.watermark
+        # No anchor yet: feed A's clock can't be trusted and the feeds may arrive out of step
+        # (one normalizer lagging), so hold events until the first anchor exists
+        return (period, raw_ms + NO_ANCHOR_GIVE_UP_MS) <= self.watermark
+
     def _release(self, now: str) -> list[MergeOutput]:
         out: list[MergeOutput] = []
         while self.buffer:
             period, raw_ms, _, event_id, version = self.buffer[0]
-            wait = WAIT_MS if self.clock.ready else FIRST_ANCHOR_WAIT_MS
-            if (period, raw_ms - self.offset_ms + wait) > self.watermark:
+            if not self._due(period, raw_ms):
                 break
             heapq.heappop(self.buffer)
             ev = self.latest[event_id]

@@ -8,7 +8,7 @@ from typing import Protocol
 from pydantic import TypeAdapter
 
 from engine.merge.outputs import MergeOutput
-from engine.merge.stage import MergeStage, parse_wall
+from engine.merge.stage import MergeStage
 from ingest.clean import NormalizedMessage
 
 normalized_adapter: TypeAdapter[NormalizedMessage] = TypeAdapter(NormalizedMessage)
@@ -50,16 +50,18 @@ class EngineCore:
         msg = normalized_adapter.validate_json(body)
         match_id = props["match_id"]
         stage = self._stage(match_id)
-        out = stage.handle(msg, parse_wall(props["emitted_at"]))
+        # Arrival time, not the provider's send time: feed health is judged on what actually
+        # reaches the engine, and merged_at records when the merge really happened (FR-25)
+        out = stage.handle(msg, now_ms)
         self.last_seen[match_id] = now_ms
         self._emit(match_id, out)
         return out
 
-    def tick(self, now_ms: float, wall_ms: float | None = None) -> list[MergeOutput]:
+    def tick(self, now_ms: float) -> list[MergeOutput]:
         """Timer: feed health, and release held events of matches that have gone quiet."""
         out_all: list[MergeOutput] = []
         for match_id, stage in self.stages.items():
-            out = stage.tick(wall_ms if wall_ms is not None else now_ms)
+            out = stage.tick(now_ms)
             if stage.buffer and now_ms - self.last_seen.get(match_id, now_ms) > IDLE_FLUSH_MS:
                 out += stage.flush(now_ms)
             self._emit(match_id, out)
