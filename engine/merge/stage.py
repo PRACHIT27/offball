@@ -8,6 +8,7 @@ import heapq
 from collections import Counter
 from datetime import UTC, datetime, timedelta
 
+from engine.merge.clock import ClockAligner
 from engine.merge.frames import FrameTrack
 from engine.merge.outputs import EventDelete, EventUpsert, FramesOut, MergeOutput, Notice, Prematch
 from ingest.clean import (
@@ -20,6 +21,8 @@ from ingest.clean import (
 )
 
 WAIT_MS = 1_500
+# Before the first clock anchor, feed A events wait up to this long for one
+FIRST_ANCHOR_WAIT_MS = 10_000
 DEDUPE_WINDOW_MS = 300_000
 EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 EVENT_NOTICES = {"conditions": "conditions.changed", "stoppage_start": "stoppage.start",
@@ -51,13 +54,15 @@ class MergeStage:
         self.seen: dict[str, float] = {}
         self.watermark: tuple[int, int] = (0, -1)
         self.frames = FrameTrack()
+        self.clock = ClockAligner()
         self.counts: Counter = Counter()
 
     # ---------- clock ----------
 
     @property
     def offset_ms(self) -> int:
-        return 0
+        """Current feed A clock offset estimate (FR-14), applied when events are released."""
+        return self.clock.offset_ms
 
     def _aligned(self, ev: CleanEvent, now: str) -> CleanEvent:
         shift = self.offset_ms if "feed_a" in ev.source_ids else 0
@@ -112,6 +117,8 @@ class MergeStage:
             self.counts["stale_versions"] += 1
             return []
         self.latest[ev.event_id] = ev
+        if prev is None:
+            self.clock.on_event(ev)
 
         if ev.event_id in self.released:
             # Late correction of an event already handed on (FR-17, FR-19)
@@ -164,7 +171,8 @@ class MergeStage:
         out: list[MergeOutput] = []
         while self.buffer:
             period, raw_ms, _, event_id, version = self.buffer[0]
-            if (period, raw_ms - self.offset_ms + WAIT_MS) > self.watermark:
+            wait = WAIT_MS if self.clock.ready else FIRST_ANCHOR_WAIT_MS
+            if (period, raw_ms - self.offset_ms + wait) > self.watermark:
                 break
             heapq.heappop(self.buffer)
             ev = self.latest[event_id]
@@ -193,6 +201,7 @@ class MergeStage:
         self.counts.update(counts)
         if batch is None:
             return []
+        self.clock.on_frames(batch.period, batch.frames)
         last = batch.frames[-1]
         self._advance(batch.period, last.match_clock_ms)
         return [FramesOut(batch=batch.model_copy(
@@ -211,7 +220,8 @@ class MergeStage:
             "seen": self.seen,
             "watermark": list(self.watermark),
             "frames": self.frames.to_state(),
-            "counts": dict(self.counts),
+            "clock": self.clock.to_state(),
+            "counts": dict(self.counts | {"clock_offset_ms": self.offset_ms}),
         }
 
     @classmethod
@@ -226,5 +236,6 @@ class MergeStage:
         m.seen = state["seen"]
         m.watermark = tuple(state["watermark"])
         m.frames = FrameTrack.from_state(state["frames"])
+        m.clock = ClockAligner.from_state(state["clock"])
         m.counts = Counter(state["counts"])
         return m

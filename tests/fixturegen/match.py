@@ -262,7 +262,10 @@ class _Sim:
         goal_dist = float(np.linalg.norm(goal_of_opponent(team) - self.pos[c]))
         own_third = (self.pos[c][0] < 35) if team == HOME else (self.pos[c][0] > 70)
         r = self.rng.random()
-        if self.rng.random() < 0.025:
+        if self.kickoff_hold:
+            self.kickoff_hold = False
+            self.act_pass(f, c, team)
+        elif self.rng.random() < 0.025:
             self.act_foul(f, c, team)
         elif goal_dist < 30 and r < 0.25:
             self.act_shot(f, c, team)
@@ -396,7 +399,6 @@ class _Sim:
                     fl["then"](f)
             elif self.carrier is not None and self.dead_until < f:
                 if f >= self.next_action:
-                    self.kickoff_hold = False
                     self.act(f)
                 elif not self.kickoff_hold:
                     c = self.carrier
