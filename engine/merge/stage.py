@@ -22,8 +22,9 @@ from ingest.clean import (
 )
 
 WAIT_MS = 1_500
-# Before the first clock anchor, feed A events are held; if feed A's own clock moves this far
-# past an event with still no anchor (feed B down), the event is released unaligned
+# Before the first clock anchor, feed A events are held. If none appears within this much real
+# (arrival) time, feed B is taken to be down and held events are released unaligned. Arrival
+# time, not match time: at 10x replay a normalizer cold start covers a minute of match time.
 NO_ANCHOR_GIVE_UP_MS = 60_000
 DEDUPE_WINDOW_MS = 300_000
 EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
@@ -55,6 +56,8 @@ class MergeStage:
         # Dedupe keys → wall ms first seen, kept for 5 minutes
         self.seen: dict[str, float] = {}
         self.watermark: tuple[int, int] = (0, -1)
+        # Arrival time of the first event held while there was no clock anchor
+        self.held_since: float | None = None
         self.frames = FrameTrack()
         self.clock = ClockAligner()
         self.health = FeedHealth()
@@ -97,11 +100,12 @@ class MergeStage:
                 out = self._event(msg.event, wall_ms, now)
             case NormalizedDelete():
                 out = self._delete(msg, wall_ms, now)
-        return self._health_notices(health) + out + self._release(now)
+        return self._health_notices(health) + out + self._release(wall_ms)
 
     def tick(self, wall_ms: float) -> list[MergeOutput]:
-        """Timer hook for the engine: feed health is checked even when nothing arrives."""
-        return self._health_notices(self.health.tick(wall_ms))
+        """Timer hook for the engine: feed health and the no-anchor give-up are checked even
+        when nothing arrives."""
+        return self._health_notices(self.health.tick(wall_ms)) + self._release(wall_ms)
 
     def _health_notices(self, found: list[dict]) -> list[MergeOutput]:
         self.counts["feed_stopped"] += sum(n["kind"] == "notice.feed_stopped" for n in found)
@@ -117,12 +121,7 @@ class MergeStage:
 
         The watermark is left alone, so events that arrive afterwards are ordered as usual.
         """
-        held = self.watermark
-        self.watermark = (99, 0)
-        try:
-            return self._release(wall_iso(wall_ms))
-        finally:
-            self.watermark = held
+        return self._release(wall_ms, force=True)
 
     # ---------- events ----------
 
@@ -166,6 +165,8 @@ class MergeStage:
             self.counts["late_inserts"] += 1
             self.released.add(ev.event_id)
             return self._publish(ev, now, late=True)
+        if not self.clock.ready and self.held_since is None:
+            self.held_since = wall_ms
         heapq.heappush(self.buffer, (ev.period, ev.match_clock_ms, self.seq, ev.event_id,
                                      ev.version))
         self.seq += 1
@@ -197,18 +198,19 @@ class MergeStage:
                                      "action": "delete"}))
         return out
 
-    def _due(self, period: int, raw_ms: int) -> bool:
+    def _due(self, period: int, raw_ms: int, wall_ms: float) -> bool:
         if self.clock.ready:
             return (period, raw_ms - self.offset_ms + WAIT_MS) <= self.watermark
         # No anchor yet: feed A's clock can't be trusted and the feeds may arrive out of step
         # (one normalizer lagging), so hold events until the first anchor exists
-        return (period, raw_ms + NO_ANCHOR_GIVE_UP_MS) <= self.watermark
+        return self.held_since is not None and wall_ms - self.held_since >= NO_ANCHOR_GIVE_UP_MS
 
-    def _release(self, now: str) -> list[MergeOutput]:
+    def _release(self, wall_ms: float, force: bool = False) -> list[MergeOutput]:
+        now = wall_iso(wall_ms)
         out: list[MergeOutput] = []
         while self.buffer:
             period, raw_ms, _, event_id, version = self.buffer[0]
-            if not self._due(period, raw_ms):
+            if not force and not self._due(period, raw_ms, wall_ms):
                 break
             heapq.heappop(self.buffer)
             ev = self.latest[event_id]
@@ -260,6 +262,7 @@ class MergeStage:
             "seq": self.seq,
             "seen": self.seen,
             "watermark": list(self.watermark),
+            "held_since": self.held_since,
             "frames": self.frames.to_state(),
             "clock": self.clock.to_state(),
             "health": self.health.to_state(),
@@ -277,6 +280,7 @@ class MergeStage:
         m.seq = state["seq"]
         m.seen = state["seen"]
         m.watermark = tuple(state["watermark"])
+        m.held_since = state["held_since"]
         m.frames = FrameTrack.from_state(state["frames"])
         m.clock = ClockAligner.from_state(state["clock"])
         m.health = FeedHealth.from_state(state["health"])

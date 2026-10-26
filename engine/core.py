@@ -62,7 +62,10 @@ class EngineCore:
         out_all: list[MergeOutput] = []
         for match_id, stage in self.stages.items():
             out = stage.tick(now_ms)
-            if stage.buffer and now_ms - self.last_seen.get(match_id, now_ms) > IDLE_FLUSH_MS:
+            idle = now_ms - self.last_seen.get(match_id, now_ms) > IDLE_FLUSH_MS
+            # Never force out events before the clock is aligned; the stage's own give-up
+            # (in tick) covers a feed B that never arrives
+            if stage.buffer and stage.clock.ready and idle:
                 out += stage.flush(now_ms)
             self._emit(match_id, out)
             out_all += out
