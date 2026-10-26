@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v1.0.0`**
+**Doc set version: `v1.1.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,15 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v1.1.0 · 2026-10-26 · Kanika
+**Files:** CLAUDE.md, VERSION.md, .githooks/pre-commit (now executable)
+**Type:** MINOR
+- Data Ingestion local mode is built (`ingest/`, `engine/merge/`, `engine/local.py`); CLAUDE.md gains the setup (uv) and local-mode commands.
+- Build decisions on top of the ingestion design: feed A counts as stopped after 60 s of silence (feed B 3 s, as designed), because feed A is naturally quiet for 20–45 s after goals and stoppages; feed health is only judged while the ball is in play; feed A events wait up to 10 s for the first clock anchor at the start of a match; gap start and end notices are sent together when frames resume.
+- Clean format additions not yet in `contracts/`: `details` (conditions, stoppage), `timings` (per-stage timestamps), frame numbers count from each period's start, and the clean event `type` list in ingestion §13.1.
+- The pre-commit hook was not executable, so git skipped it for everyone; it is now.
+- **Action required:** run `git config core.hooksPath .githooks` once per clone if you haven't.
 
 ## v1.0.0 · 2026-10-25 · Kanika
 **Files:** CLAUDE.md, docs/design/lld-data-ingestion.md, VERSION.md

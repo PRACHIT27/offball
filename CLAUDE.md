@@ -98,13 +98,14 @@ Rules for any session building Data Ingestion (`ingest/` normalizers, `engine/` 
 | Design | Build exactly as [lld-data-ingestion.md](docs/design/lld-data-ingestion.md) specifies, except the two deviations below |
 | Deviation: storage | Blob Storage instead of OneLake: Bronze via Capture to `bronze`, Silver frames as Parquet in `silver-frames` |
 | Deviation: validation | Validate with Pydantic models only; no Event Hubs Schema Registry |
-| Python | 3.12 in `.venv` (`python3.12 -m venv .venv`); Pydantic; pytest |
+| Python | 3.12 in `.venv` via uv (`uv venv --python 3.12 .venv && uv pip install --python .venv -e '.[dev]'`); Pydantic; pytest. Homebrew's Python 3.12 can't load `pyexpat` on this Mac |
 | Local first | Build local mode (FR-29) first; everything must run from files with no Azure |
 | Plain functions | Keep logic in plain functions; Azure Functions and the engine only call them |
 | Mess levels | Build the `light` mess level first; `full` last |
 | Raw feed formats | Feed A and Feed B wire formats are not in the LLD: propose them and wait for the owner's OK before building |
 | Data and secrets | Fictional clubs and players only. Never commit or print secrets from `.env` |
 | Azure changes | Ask before creating, changing or deleting any Azure resource |
+| Local mode | `python -m tests.fixturegen --out local_feeds/fx01 --mess light`, then `python -m engine.local --feeds local_feeds/fx01/feeds --out local_out --match fx01` |
 
 **Azure resources that already exist** (resource group `offball-rg`, region `westus2`):
 
