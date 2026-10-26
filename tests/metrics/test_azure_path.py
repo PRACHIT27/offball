@@ -94,7 +94,7 @@ def run_azure(hub, root, crash_at=None):
             core, router = fresh()
         core.handle(body, headers, parse_wall(headers["emitted_at"]))
     end = parse_wall(hub[-1][1]["emitted_at"])
-    core.tick(end + 10_000, wall_ms=end)
+    core.tick(end + 10_000)
     core.checkpoint()
     router.checkpoint()
     return producer, cosmos, router
