@@ -10,6 +10,7 @@ from datetime import UTC, datetime, timedelta
 
 from engine.merge.clock import ClockAligner
 from engine.merge.frames import FrameTrack
+from engine.merge.health import FeedHealth
 from engine.merge.outputs import EventDelete, EventUpsert, FramesOut, MergeOutput, Notice, Prematch
 from ingest.clean import (
     CleanEvent,
@@ -55,6 +56,7 @@ class MergeStage:
         self.watermark: tuple[int, int] = (0, -1)
         self.frames = FrameTrack()
         self.clock = ClockAligner()
+        self.health = FeedHealth()
         self.counts: Counter = Counter()
 
     # ---------- clock ----------
@@ -78,6 +80,7 @@ class MergeStage:
     def handle(self, msg: NormalizedMessage, wall_ms: float) -> list[MergeOutput]:
         now = wall_iso(wall_ms)
         self._expire(wall_ms)
+        health = self.health.on_message("B" if isinstance(msg, NormalizedFrames) else "A", wall_ms)
         match msg:
             case NormalizedPrematch():
                 out = [Prematch(match_id=msg.match_id, prematch=msg.prematch)]
@@ -87,7 +90,20 @@ class MergeStage:
                 out = self._event(msg.event, wall_ms, now)
             case NormalizedDelete():
                 out = self._delete(msg, wall_ms, now)
-        return out + self._release(now)
+        return self._health_notices(health) + out + self._release(now)
+
+    def tick(self, wall_ms: float) -> list[MergeOutput]:
+        """Timer hook for the engine: feed health is checked even when nothing arrives."""
+        return self._health_notices(self.health.tick(wall_ms))
+
+    def _health_notices(self, found: list[dict]) -> list[MergeOutput]:
+        self.counts["feed_stopped"] += sum(n["kind"] == "notice.feed_stopped" for n in found)
+        period, clock = self.watermark
+        return [Notice(kind=n["kind"], notice_id=f"{n['kind']}:{n['feed']}:{round(n['wall_ms'])}",
+                       match_id=self.match_id, period=period or None,
+                       match_clock_ms=clock if period else None, details=n["details"],
+                       emitted_at=wall_iso(n["wall_ms"]))
+                for n in found]
 
     def flush(self, wall_ms: float) -> list[MergeOutput]:
         """End of stream: release everything still in the wait window."""
@@ -197,14 +213,19 @@ class MergeStage:
     # ---------- frames ----------
 
     def _frames(self, msg: NormalizedFrames, now: str) -> list[MergeOutput]:
-        batch, counts = self.frames.handle(msg.batch)
+        batch, counts, gaps = self.frames.handle(msg.batch)
         self.counts.update(counts)
         if batch is None:
             return []
         self.clock.on_frames(batch.period, batch.frames)
         last = batch.frames[-1]
         self._advance(batch.period, last.match_clock_ms)
-        return [FramesOut(batch=batch.model_copy(
+        notices: list[MergeOutput] = [
+            Notice(kind=g["kind"], notice_id=f"{g['kind']}:{batch.period}:{g['frame']}",
+                   match_id=self.match_id, period=batch.period,
+                   match_clock_ms=g["match_clock_ms"], details=g["details"], emitted_at=now)
+            for g in gaps]
+        return notices + [FramesOut(batch=batch.model_copy(
             update={"timings": {**batch.timings, "merged_at": now}}))]
 
     # ---------- restart ----------
@@ -221,6 +242,7 @@ class MergeStage:
             "watermark": list(self.watermark),
             "frames": self.frames.to_state(),
             "clock": self.clock.to_state(),
+            "health": self.health.to_state(),
             "counts": dict(self.counts | {"clock_offset_ms": self.offset_ms}),
         }
 
@@ -237,5 +259,6 @@ class MergeStage:
         m.watermark = tuple(state["watermark"])
         m.frames = FrameTrack.from_state(state["frames"])
         m.clock = ClockAligner.from_state(state["clock"])
+        m.health = FeedHealth.from_state(state["health"])
         m.counts = Counter(state["counts"])
         return m
