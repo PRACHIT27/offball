@@ -181,9 +181,11 @@ async def main() -> None:
     stats_from = datetime.now(timezone.utc) - STATS_LOOKBACK
     while True:
         try:
-            stats = EventHubConsumerClient(namespace, "insights", eventhub_name="stats",
+            stats = EventHubConsumerClient(fully_qualified_namespace=namespace,
+                                           eventhub_name="stats", consumer_group="insights",
                                            credential=cred)
-            triggers = EventHubConsumerClient(namespace, "agents", eventhub_name="triggers",
+            triggers = EventHubConsumerClient(fully_qualified_namespace=namespace,
+                                              eventhub_name="triggers", consumer_group="agents",
                                               credential=cred)
             async with stats, triggers:
                 await asyncio.gather(
