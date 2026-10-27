@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.9.0`**
+**Doc set version: `v2.10.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,20 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.10.0 · 2026-10-27 · Archit
+**Files:** README.md, VERSION.md (also `docs/submission.md`, `.devcontainer/devcontainer.json`)
+**Type:** MINOR
+- `docs/submission.md` is new. It holds:
+  - the pitch draft and how to try it (live links, no login);
+  - the results numbers, taken from `results/RESULTS.md` and `docs/insight-generation.md`;
+  - the Microsoft technology actually used, and honesty notes (synthetic only, positions not video, what isn't built).
+- The README links it at the top for judges.
+- Codespaces dev container: Python 3.12, Node 22, Azure CLI, all extras installed, hook enabled.
+- **Action required (team):**
+  - fill the Copilot / Azure MCP Server section in `docs/submission.md` with what you really did;
+  - review the pitch;
+  - add the video link when it's recorded.
 
 ## v2.9.0 · 2026-10-27 · Kanika
 **Files:** CLAUDE.md, VERSION.md (code: `insights/service.py`, `insights/live.html`, `Dockerfile.insights`, `scripts/deploy_insights.sh`)
