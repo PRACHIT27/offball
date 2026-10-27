@@ -150,3 +150,14 @@ Afterwards: `az functionapp scale config always-ready delete -g offball-rg -n of
 
 Output folders: `feeds/` (feed_a.jsonl, feed_b.jsonl), `answer-keys/` (answer_key.json with tactic changes and true player stats, frames_truth.npz with possession per frame), `match/` (match.json, prematch.json, events.jsonl, frames.parquet).
 
+## Lane 1: Tactical Intelligence
+
+`engine/tactics/` reads the merge stage's clean output (same router hook as Performance Metrics) and needs nothing else.
+
+| Task | Command |
+|---|---|
+| Run on a generated match | `python -m engine.tactics.local --feeds local_feeds/m001/feeds --match m001 --answer-key local_feeds/m001/answer-keys/answer_key.json` |
+| Output | `local_out/<match>/tactics/`: windows, series, territory, notes, triggers (JSONL) and `scoring.json` |
+| Tune thresholds | JSON file passed with `--config` or `TACTICS_CONFIG`; every field of `engine/tactics/config.py` |
+| Tests | `python -m pytest tests/tactics` |
+
