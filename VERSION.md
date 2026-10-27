@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.0.0`**
+**Doc set version: `v2.1.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,15 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.1.0 · 2026-10-26 · Prachit
+**Files:** CLAUDE.md, VERSION.md (code: `sim/`, `tests/sim/`, pyproject.toml)
+**Type:** MINOR
+- Match Simulation built in `sim/`: three fictional clubs with managers (identity, reaction style, risk) and generated squads with abilities and careers; tactics in three layers (identity → match plan → live) that players actually play (line height, offside trap, pressing, compactness, style, tempo, formation); reactions to red cards, leading late and trailing late; six storylines (`red_card`, `comeback`, `switch`, `late_drama`, `press_fade`, `storm`) plus `random --seed N`, which invents a different match story for every seed; answer key with every tactic change and true player stats. CLAUDE.md gains a "Lane 1: Match Simulation" section with the commands.
+- Feeds reuse `tests/fixturegen/` writers, mess rules and streamer, so they follow ingestion §13. Checked: ingestion recovers ≥ 99% of events with no dead letters and aligns the clock within 80 ms.
+- Realism on the red-card match: ~10 km per outfield player, top speed ~9 m/s, ~30 sprints, 550–700 passes per team at 80–86%, 8–15 shots; Northgate's line drops ~12 m after the 70' red card.
+- Deviations from the simulation LLD: no offside events (ingestion has no offside type; the trap still shows in positions); foul and card reasons are sent as feed A qualifiers 301–315, which ingestion currently ignores; storylines with scripted goals get exactly those goals (no natural ones), and storylines with a scripted red card have no random red cards, so scripted scores hold; frames_truth.npz adds possession per frame.
+- **Action required:** Data Ingestion maps qualifiers 301–315 to clean `qualifiers` if the Fair Play/referee explanations are wanted. Lanes 2 and 3 can generate matches locally with `python -m sim generate`.
 
 ## v2.0.0 · 2026-10-26 · Kanika
 **Files:** contracts/README.md (new), contracts/ingestion/*.schema.json (new), CLAUDE.md, VERSION.md
