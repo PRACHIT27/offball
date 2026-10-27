@@ -131,3 +131,19 @@ Rules for any session building Data Ingestion (`ingest/` normalizers, `engine/` 
 **Before the demo:** turn on one always-ready normalizer instance (off during build to save cost):
 `az functionapp scale config always-ready set -g offball-rg -n offball-ingest-kr2610 --settings function:normalize_feed_b=1`.
 Afterwards: `az functionapp scale config always-ready delete -g offball-rg -n offball-ingest-kr2610 --setting-names function:normalize_feed_b`.
+
+## Lane 1: Match Simulation
+
+`sim/` is the real simulator. It reuses the feed writers, mess rules and streamer from `tests/fixturegen/`, so its feeds follow ingestion §13 and run through the deployed ingestion unchanged.
+
+| Task | Command |
+|---|---|
+| Generate a match (feeds + answer key + truth files) | `python -m sim generate --storyline red_card --out local_feeds/m001` |
+| Storylines | `red_card` (m001, RIV v NGU), `comeback` (m002, NGU v KVA), `switch` (m003, KVA v RIV), or a JSON file |
+| Short match for quick tests | add `--minutes 5` |
+| Run ingestion on it | `python -m engine.local --feeds local_feeds/m001/feeds --out local_out/m001 --match m001` |
+| Stream into Azure | `python -m sim stream --feeds local_feeds/m001/feeds --speed 10` |
+| Tests | `python -m pytest tests/sim` (full-match tests take about a minute each) |
+
+Output folders: `feeds/` (feed_a.jsonl, feed_b.jsonl), `answer-keys/` (answer_key.json with tactic changes and true player stats, frames_truth.npz with possession per frame), `match/` (match.json, prematch.json, events.jsonl, frames.parquet).
+
