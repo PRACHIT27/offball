@@ -36,6 +36,16 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 
 ## Log
 
+## v2.3.0 · 2026-10-27 · Prachit
+**Files:** CLAUDE.md, VERSION.md (code: `engine/tactics/`, `tests/tactics/`)
+**Type:** MINOR
+- Tactical Intelligence built (local mode). Every 10 s of match time, each team's last 5 minutes: line height, offside traps, compactness, formation in and out of possession, pressing (per minute, size, triggers, PPDA), recovery time, style dial, control vs. chaos, tempo, passing network, chance routes, player positions; territory heatmaps every 60 s; chart series every window.
+- Change detector with tentative (2 min) and confirmed (4 min) notes, anchored to the level before the change; promoter; trigger maker (goals, cards, subs, conditions, long stoppages, 85', check-ins at 15/30/45/60/75/90, confirm due 4 min after a crux with did-it-work); tunable trigger buffer with summaries; answer-key scoring.
+- Red-card storyline: catches the half-time switch to a back three, Riverside dropping deeper when leading, and Northgate's line dropping ~8–12 m after the 70' red card (confirm due at 74'). Switch storyline: 4 of 4. Press Fade: 2 of 9, and false alarms are still high (teams also react without a scripted change); thresholds need tuning.
+- Deviations from the TI LLD: settings are JSON, not YAML; possession is inferred from on-ball events (frames carry none); the "normal style" baseline is the team's own 5–15 minute play in this match, not club history, because measured and scripted scales differ; triggers also carry `reason` and `play_ms`.
+- Not yet: Azure sinks (`stats`, `triggers` hubs) and wiring into the deployed engine's router.
+- **Action required:** Lane 2 can build agents against `local_out/<match>/tactics/triggers.jsonl` now. Lane 3 can draw windows, series and territory from the same folder.
+
 ## v2.2.1 · 2026-10-27 · Prachit
 **Files:** CLAUDE.md, VERSION.md (code: `scripts/deploy_sim.sh`)
 **Type:** PATCH
