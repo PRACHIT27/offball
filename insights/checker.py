@@ -32,10 +32,16 @@ NUMBER = re.compile(r"(?<![\w.])(\d+(?:[.,]\d+)?)(\s*(?:m\b|%|/min|°))?")
 
 # Claims of change, per measure and direction (rule 4)
 CLAIMS = {
-    ("line_height_m", "down"): r"drop(?:s|ped|ping)? (?:back|deeper)|deeper|sit(?:s|ting)? deeper|retreat|lower(?:ed)? (?:their |the )?line|retrasa|repliega|पीछे",
-    ("line_height_m", "up"): r"push(?:es|ed|ing)? (?:their |the )?line (?:up|higher)|rais(?:e|es|ed|ing) (?:its |their |the )?line|higher line|line higher|adelanta|आगे",
-    ("pressing_per_min", "up"): r"press(?:es|ing)? (?:more|harder)|more pressing|step(?:s|ped)? up the press|presiona más|más presión|ज़्यादा प्रेस",
-    ("pressing_per_min", "down"): r"press(?:es|ing)? less|less pressing|stop(?:s|ped)? pressing|eas(?:e|es|ed) off|presiona menos|menos presión|कम प्रेस",
+    ("line_height_m", "down"): (r"drop(?:s|ped|ping)? (?:back|deeper)|deeper|sit(?:s|ting)? deeper"
+                                r"|retreat|lower(?:ed)? (?:their |the )?line|retrasa|repliega|पीछे"),
+    ("line_height_m", "up"): (r"push(?:es|ed|ing)? (?:their |the )?line (?:up|higher)"
+                              r"|rais(?:e|es|ed|ing) (?:its |their |the )?line|higher line"
+                              r"|line higher|adelanta|आगे"),
+    ("pressing_per_min", "up"): (r"press(?:es|ing)? (?:more|harder)|more pressing"
+                                 r"|step(?:s|ped)? up the press|presiona más|más presión"
+                                 r"|ज़्यादा प्रेस"),
+    ("pressing_per_min", "down"): (r"press(?:es|ing)? less|less pressing|stop(?:s|ped)? pressing"
+                                   r"|eas(?:e|es|ed) off|presiona menos|menos presión|कम प्रेस"),
 }
 
 
@@ -106,7 +112,8 @@ class Grounding:
         pool = self.numbers
         if unit == "%":
             # A share of 0.66 is 66%, never "0.66%"
-            pool = {v for v in self.numbers if v >= 1} | {v * 100 for v in self.numbers if 0 < v < 1}
+            pool = ({v for v in self.numbers if v >= 1}
+                    | {v * 100 for v in self.numbers if 0 < v < 1})
             if n < 1:  # ±1 would let "0.5%" match unrelated small numbers
                 tol = 0.05
         # 1e-9: 8.15 rounds to "8.2", exactly 0.05 away, which float error would push past
