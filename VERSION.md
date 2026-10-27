@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.5.0`**
+**Doc set version: `v2.5.1`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,14 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.5.1 · 2026-10-27 · Archit
+**Files:** README.md, CLAUDE.md, VERSION.md (code: `web/public/staticwebapp.config.json`, `.github/workflows/web.yml`, `web/README.md`)
+**Type:** PATCH
+- The viewer screen is online at https://jolly-cliff-0ccede51e.4.azurestaticapps.net: Static Web App `offball-web` (Free, westus2) in `offball-rg`, serving the three recorded matches. Share links such as `?match=m001&t=4300&type=analyst` open a moment.
+- README links the live screen; CLAUDE.md gains "Lane 3: Viewer screen" with run, build and deploy commands.
+- `.github/workflows/web.yml` builds the screen on every PR and deploys on pushes to `main`.
+- **Action required:** a repo admin (Prachit) adds the secret `AZURE_STATIC_WEB_APPS_API_TOKEN` once; the command is at the top of the workflow file. Until then, deploy by hand (web/README.md). Whoever changes `web/` (e.g. Insight Generation captions) redeploys after merging.
 
 ## v2.5.0 · 2026-10-27 · Archit
 **Files:** CLAUDE.md, VERSION.md (code: `engine/metrics/`, `engine/service.py`, `engine/store_azure.py`, `scripts/deploy_engine.sh`)
