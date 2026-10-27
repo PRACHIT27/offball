@@ -54,8 +54,8 @@ async def agent_insights(data: MatchData, data_dir: Path, concurrency: int) -> l
     async def one(trigger: dict) -> Insight:
         async with gate:
             i = await run_trigger(trigger, data, team)
-            print(f"  {i.trigger_id} {i.kind:<10} {i.caption_source:<8} {i.latency_ms / 1000:5.1f} s"
-                  f"  {i.captions['analyst.en']}", flush=True)
+            print(f"  {i.trigger_id} {i.kind:<10} {i.caption_source:<8}"
+                  f" {i.latency_ms / 1000:5.1f} s  {i.captions['analyst.en']}", flush=True)
             return i
 
     async with DefaultAzureCredential() as cred, Team(data_dir, cred) as team:
@@ -93,13 +93,15 @@ def main() -> None:
     with out.open("w", encoding="utf-8") as f:
         for i in insights:
             f.write(i.model_dump_json() + "\n")
-    print(f"match {args.match}: {len(insights)} insights in {time.perf_counter() - t0:.1f} s -> {out}")
+    took = time.perf_counter() - t0
+    print(f"match {args.match}: {len(insights)} insights in {took:.1f} s -> {out}")
     if args.agents:
         lat = sorted(i.latency_ms for i in insights)
         agent = sum(i.caption_source == "agent" for i in insights)
         caps = sum(12 - len(i.checker.template_keys) for i in insights)
+        first_try = sum(i.checker.attempts == 1 and i.checker.passed for i in insights)
         print(f"agent insights: {agent}/{len(insights)}; agent captions {caps}/{12 * len(insights)}"
-              f"; first-try pass {sum(i.checker.attempts == 1 and i.checker.passed for i in insights)}"
+              f"; first-try pass {first_try}"
               f"; latency median {lat[len(lat) // 2] / 1000:.1f} s, worst {lat[-1] / 1000:.1f} s")
     else:
         for i in insights:

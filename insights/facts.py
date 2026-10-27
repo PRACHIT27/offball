@@ -132,7 +132,8 @@ def build(trigger: dict, data: MatchData) -> dict:
     dw = ev.get("did_it_work")
     if dw:
         f["did_it_work"] = {
-            "xg_per_10_minutes": [dw["before"].get("xg_for_per10"), dw["after"].get("xg_for_per10")],
+            "xg_per_10_minutes": [dw["before"].get("xg_for_per10"),
+                                  dw["after"].get("xg_for_per10")],
             "possession_pct": [round(100 * dw["before"]["possession_share"]),
                                round(100 * dw["after"]["possession_share"])]
             if dw["before"].get("possession_share") is not None

@@ -1,5 +1,8 @@
 # OffBall viewer screen
 
+**Live:** https://jolly-cliff-0ccede51e.4.azurestaticapps.net
+(red card at 70': https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4300&type=analyst)
+
 The viewer screen from [lld-audience.md](../docs/design/lld-audience.md): the pitch, a caption bar,
 a side panel and a timeline. React + TypeScript + Vite, with the pitch drawn in SVG.
 
@@ -37,6 +40,23 @@ Add `--minutes 10` to build a quick short match.
 Keys: space plays and pauses, ← → move 10 s. Links can open a moment:
 `/?match=m001&t=4200&type=analyst` (t in seconds of play).
 
+## Performance Metrics view
+
+`{match_id}.metrics.json` sits next to each replay, written by `scripts/build_metrics_view.py`. It
+is optional: the screen works without it. It adds:
+- **Pitch:** the ball carrier's pressure from metrics (a dashed ring at ≥ 0.75, and the value in
+  analyst view); shot-speed and distance-milestone badges.
+- **Side panel:** a shot map (dot size = xG, filled = goal), and passing per team (accuracy, the
+  pass model's expected accuracy, average difficulty).
+- **Player card:** a 21 × 14 heatmap, for the whole match or the last 15 minutes.
+
+```sh
+PYTHONPATH=. python scripts/build_metrics_view.py --storyline red_card --match m001
+```
+
+It re-simulates the storyline (deterministic, so the same match as the replay) and never touches
+`{match_id}.json`, which also holds Insight Generation's captions.
+
 ## Replay file
 
 `scripts/build_replay.py` writes `web/public/replays/{match_id}.json` and updates `index.json`.
@@ -47,3 +67,23 @@ Keys: space plays and pauses, ← → move 10 s. Links can open a moment:
   dropped), xG, totals every minute, tactics series, confirmed notes and triggers.
 - **Time:** `t` is ms of play since kick-off, continuous across both halves.
 - **Size:** about 7 MB for a full match, about 2 MB gzipped.
+
+## Deploy (Azure Static Web Apps)
+
+Static Web App `offball-web` (Free) in `offball-rg`. `public/staticwebapp.config.json` sets:
+- the fallback to `index.html`, so share links work;
+- caching: replays 1 h, hashed assets for good.
+
+Responses are brotli-compressed, so a 7 MB replay comes over as about 2 MB.
+
+By hand (needs `az login` on the subscription; the token is never printed or saved):
+
+```sh
+cd web && npm ci && npm run build
+SWA_TOKEN=$(az staticwebapp secrets list -n offball-web -g offball-rg --query properties.apiKey -o tsv)
+npx @azure/static-web-apps-cli@2 deploy ./dist --deployment-token "$SWA_TOKEN" --env production
+```
+
+Automatically: `.github/workflows/web.yml` builds on every PR and deploys on pushes to `main`,
+once a repo admin adds the secret `AZURE_STATIC_WEB_APPS_API_TOKEN` (the command is in the
+workflow file).

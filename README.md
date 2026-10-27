@@ -6,6 +6,8 @@
 
 ![OffBall high-level architecture](docs/design/diagrams/architecture.svg)
 
+**Live viewer screen:** https://jolly-cliff-0ccede51e.4.azurestaticapps.net (recorded matches; e.g. [the 70' red card](https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4300&type=analyst))
+
 **Team:** 3 · **Submission deadline:** **Tue Oct 27, 2026, 11:59 pm PT** (Wed Oct 28, 2:59 am ET) · **Winners announced:** by Nov 20
 
 ---

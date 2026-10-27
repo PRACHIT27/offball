@@ -16,7 +16,7 @@ import logging
 import os
 import time
 import traceback
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from aiohttp import web
@@ -180,7 +180,7 @@ async def main() -> None:
     await runner.setup()
     await web.TCPSite(runner, "0.0.0.0", int(os.environ.get("PORT", "8080"))).start()
     log.info("insights service up: stats lookback %s, triggers from now", STATS_LOOKBACK)
-    stats_from = datetime.now(timezone.utc) - STATS_LOOKBACK
+    stats_from = datetime.now(UTC) - STATS_LOOKBACK
     while True:
         try:
             stats = EventHubConsumerClient(fully_qualified_namespace=namespace,
@@ -197,7 +197,7 @@ async def main() -> None:
         except Exception as e:
             svc.last_error = "".join(traceback.format_exception_only(e))[-1000:]
             log.exception("hub readers stopped; retrying in 30 s")
-        stats_from = datetime.now(timezone.utc) - timedelta(minutes=10)
+        stats_from = datetime.now(UTC) - timedelta(minutes=10)
         await asyncio.sleep(30)
 
 

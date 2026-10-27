@@ -37,7 +37,9 @@ class Safety:
                                  headers=await self._headers(),
                                  json=[{"text": captions[k]} for k in keys])
         r.raise_for_status()
-        return {k: item["translations"][0]["text"] for k, item in zip(keys, r.json())}
+        # One translation per input text, in order (Translator API); keep as before if short
+        return {k: item["translations"][0]["text"]
+                for k, item in zip(keys, r.json(), strict=False)}
 
     async def harmful(self, text: str) -> list[str]:
         r = await self.http.post(f"{ENDPOINT}/contentsafety/text:analyze?api-version=2024-09-01",
@@ -50,7 +52,7 @@ class Safety:
         """Reasons per caption key; a caption with no reasons passed."""
         english, *flags = await asyncio.gather(self.back_translate(captions),
                                                *(self.harmful(t) for t in captions.values()))
-        reasons = dict(zip(captions, flags))
+        reasons = dict(zip(captions, flags, strict=True))  # one safety verdict per caption
         for key, text in english.items():
             # Same rules as English; no word limit, a translation's length says nothing
             found = (checker.check_numbers(text, "en", g)

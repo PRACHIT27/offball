@@ -1,5 +1,6 @@
+import { metricCuesAt, PRESS_RING, pressureAt } from "../metrics";
 import { activeCues, latestSeries, snapshotAt, speedsAt, surname } from "../replay";
-import type { Replay, ViewerType } from "../types";
+import type { MetricsView, Replay, ViewerType } from "../types";
 
 const L = 105;
 const FAST_TAG_KMH = 20;
@@ -45,13 +46,14 @@ function Markings() {
 
 interface Props {
   replay: Replay;
+  metrics: MetricsView | null;
   t: number;
   viewer: ViewerType;
   focus: string | null;
   onPickPlayer: (pid: string) => void;
 }
 
-export function Pitch({ replay: r, t, viewer, focus, onPickPlayer }: Props) {
+export function Pitch({ replay: r, metrics, t, viewer, focus, onPickPlayer }: Props) {
   const snap = snapshotAt(r, t);
   if (!snap) return <svg className="pitch" viewBox={`-3 -3 ${L + 6} ${W + 6}`} />;
   const speeds = speedsAt(r, t);
@@ -60,6 +62,9 @@ export function Pitch({ replay: r, t, viewer, focus, onPickPlayer }: Props) {
   const ghost = cues.find((c) => c.kind === "best_option");
   const decoy = cues.find((c) => c.kind === "decoy_run");
   const alerts = cues.filter((c) => c.kind === "speed_alert");
+  // From the metrics side file: pressure on every player, shot speeds, distance milestones
+  const pressure = pressureAt(metrics, t);
+  const extra = metricCuesAt(metrics, t);
 
   // Pressure rings: opponents within 2 m of the ball carrier (pressure ≥ 0.75)
   let carrier: string | null = null;
@@ -142,6 +147,32 @@ export function Pitch({ replay: r, t, viewer, focus, onPickPlayer }: Props) {
           </text>
         </g>
       )}
+
+      {carrier && pressure?.has(carrier) && (() => {
+        const p = snap.players.get(carrier)!;
+        const v = pressure.get(carrier)!;
+        return (
+          <g className="overlay">
+            {v >= PRESS_RING && <circle cx={p[0]} cy={p[1]} r={3.2} className="press-ring under" />}
+            {viewer === "analyst" && v > 0 && (
+              <text x={p[0]} y={p[1] - 2.2} className="arc-label" textAnchor="middle">
+                pressure {(v / 100).toFixed(2)}
+              </text>
+            )}
+          </g>
+        );
+      })()}
+
+      {extra.map((c, i) => c.anchor && (
+        <g key={`m-${i}`} className="overlay metric-cue">
+          <rect x={c.anchor.x - 6} y={c.anchor.y - 6.2} width={12} height={2.6} rx={0.6} />
+          <text x={c.anchor.x} y={c.anchor.y - 4.4} textAnchor="middle">
+            {c.kind === "shot_speed"
+              ? `Shot ${c.data.speed_kmh?.toFixed(0)} km/h · xG ${c.data.xg?.toFixed(2)}`
+              : `${surname(r, c.data.player_id)}: ${(c.data.distance_m / 1000).toFixed(0)} km covered`}
+          </text>
+        </g>
+      ))}
 
       {pressers.map((pid) => {
         const p = snap.players.get(pid)!;

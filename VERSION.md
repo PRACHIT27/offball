@@ -87,6 +87,14 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 - `tests/engine/test_local_mode.py` now also guards `insights/` against reading the answer key. That test already failed on `main` because `engine/tactics/local.py` has `--answer-key`.
 - **Action required:** Tactical Intelligence moves answer-key scoring out of `engine/tactics/local.py` (for example into `tests/`) or narrows the guard. Lane 3: `scripts/build_replay.py` rewrites a replay without insights; run `python -m insights.local … --replay` after it.
 
+## v2.5.1 · 2026-10-27 · Archit
+**Files:** README.md, CLAUDE.md, VERSION.md (code: `web/public/staticwebapp.config.json`, `.github/workflows/web.yml`, `web/README.md`)
+**Type:** PATCH
+- The viewer screen is online at https://jolly-cliff-0ccede51e.4.azurestaticapps.net: Static Web App `offball-web` (Free, westus2) in `offball-rg`, serving the three recorded matches. Share links such as `?match=m001&t=4300&type=analyst` open a moment.
+- README links the live screen; CLAUDE.md gains "Lane 3: Viewer screen" with run, build and deploy commands.
+- `.github/workflows/web.yml` builds the screen on every PR and deploys on pushes to `main`.
+- **Action required:** a repo admin (Prachit) adds the secret `AZURE_STATIC_WEB_APPS_API_TOKEN` once; the command is at the top of the workflow file. Until then, deploy by hand (web/README.md). Whoever changes `web/` (e.g. Insight Generation captions) redeploys after merging.
+
 ## v2.5.0 · 2026-10-27 · Archit
 **Files:** CLAUDE.md, VERSION.md (code: `engine/metrics/`, `engine/service.py`, `engine/store_azure.py`, `scripts/deploy_engine.sh`)
 **Type:** MINOR

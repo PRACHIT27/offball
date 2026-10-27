@@ -228,3 +228,14 @@ quota), endpoint `https://offball-ai-kr2610.cognitiveservices.azure.com/`, deplo
 (`Cognitive Services OpenAI User`, `Cognitive Services User`). gpt-4o-mini is retired and gpt-4.1-mini
 has no quota here.
 
+## Lane 3: Viewer screen
+
+`web/` (React + TypeScript + Vite) plays replays built by `scripts/build_replay.py` (a simulated match through ingestion, metrics and tactics). Details: [web/README.md](web/README.md).
+
+| Task | Command |
+|---|---|
+| Live site | https://jolly-cliff-0ccede51e.4.azurestaticapps.net (Static Web App `offball-web`, Free, `offball-rg`) |
+| Run locally | `cd web && npm install && npm run dev` |
+| Build replays | `PYTHONPATH=. python scripts/build_replay.py --storyline red_card --out web/public/replays` |
+| Deploy by hand | `cd web && npm ci && npm run build`, then the SWA CLI command in web/README.md (`az login` needed; never print the token) |
+| Deploy automatically | `.github/workflows/web.yml` on push to `main`, once a repo admin adds secret `AZURE_STATIC_WEB_APPS_API_TOKEN` |
