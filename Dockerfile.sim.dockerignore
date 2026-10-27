@@ -1,0 +1,9 @@
+*
+!pyproject.toml
+!ingest/
+!engine/
+!sim/
+!tests/__init__.py
+!tests/fixturegen/
+**/__pycache__
+ingest/functionapp/

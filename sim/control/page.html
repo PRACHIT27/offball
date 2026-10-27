@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OffBall Match Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#0f1512;--panel:#161e19;--panel2:#1d2721;--line:#2a352e;--text:#e6ece7;--muted:#9aa89f;
+  --pitch:#5fbf8a;--accent:#e8a24f;--danger:#f07167;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;--body:"Public Sans",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding:32px max(16px,env(safe-area-inset-right)) 48px max(16px,env(safe-area-inset-left))}
+.wrap{max-width:980px;margin:0 auto;display:grid;gap:20px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-size:34px;letter-spacing:.02em;margin:0;text-transform:uppercase}
+h1 span{color:var(--pitch)}
+.sub{color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:1.2fr 1fr;gap:20px}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:14px;min-width:0}
+.label{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.stories{display:grid;gap:8px}
+.story{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:10px 12px;border:1px solid var(--line);
+  border-radius:8px;background:var(--panel2);cursor:pointer}
+.story:has(input:checked){border-color:var(--pitch)}
+.story input{margin-top:4px;accent-color:var(--pitch)}
+.story b{display:block;font-weight:600}
+.story small{color:var(--muted)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+.field{display:grid;gap:6px}
+select,input[type=number],input[type=password]{background:var(--panel2);color:var(--text);border:1px solid var(--line);
+  border-radius:6px;padding:8px 10px;font:inherit;min-width:0}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg label{padding:8px 12px;cursor:pointer;background:var(--panel2);font-family:var(--mono);font-size:13px}
+.seg input{display:none}
+.seg label:has(input:checked){background:var(--pitch);color:#0f1512}
+.buttons{display:flex;gap:10px}
+button{font:600 15px var(--body);padding:11px 22px;border-radius:8px;border:1px solid transparent;cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#play{background:var(--pitch);color:#0f1512}
+#stop{background:transparent;color:var(--text);border-color:var(--line)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.error{color:var(--danger);font-size:13px;min-height:1em}
+.scoreboard{display:grid;gap:6px;text-align:center;padding:14px;background:var(--panel2);border-radius:8px}
+.teams{font-family:var(--display);font-size:24px;text-transform:uppercase;letter-spacing:.02em}
+.clock{font-family:var(--display);font-size:64px;line-height:1;color:var(--pitch);font-variant-numeric:tabular-nums}
+.pill{justify-self:center;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 10px;border-radius:999px;border:1px solid currentColor;color:var(--muted)}
+.pill.live{color:var(--pitch)}.pill.wait{color:var(--accent)}.pill.bad{color:var(--danger)}
+.bar{height:8px;background:var(--panel2);border-radius:999px;overflow:hidden}
+.bar div{height:100%;width:0;background:var(--pitch);transition:width .4s}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:14px}
+dt{color:var(--muted)}dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.note{color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:reduce){.bar div{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>OffBall <span>Match control</span></h1>
+    <div class="sub">Plays a simulated match into the live pipeline</div>
+  </header>
+  <div class="grid">
+    <section class="panel">
+      <div class="label">Storyline</div>
+      <div class="stories" id="stories"></div>
+      <div class="row">
+        <div class="field" id="seedField" hidden>
+          <label class="label" for="seed">Seed</label>
+          <input type="number" id="seed" min="0" max="999999" value="1">
+        </div>
+        <div class="field">
+          <span class="label">Speed</span>
+          <div class="seg" id="speed">
+            <label><input type="radio" name="speed" value="1">1×</label>
+            <label><input type="radio" name="speed" value="10" checked>10×</label>
+            <label><input type="radio" name="speed" value="30">30×</label>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="mess">Feed mess</label>
+          <select id="mess">
+            <option value="off">Off</option>
+            <option value="light" selected>Light</option>
+            <option value="full">Full</option>
+          </select>
+        </div>
+        <div class="field" id="keyField" hidden>
+          <label class="label" for="key">Passcode</label>
+          <input type="password" id="key" autocomplete="off">
+        </div>
+      </div>
+      <div class="buttons">
+        <button id="play">Play</button>
+        <button id="stop" disabled>Stop</button>
+      </div>
+      <div class="error" id="error" role="alert"></div>
+    </section>
+    <section class="panel" aria-live="polite">
+      <div class="label">Now</div>
+      <div class="scoreboard">
+        <span class="pill" id="phase">Idle</span>
+        <div class="teams" id="teams">No match playing</div>
+        <div class="clock" id="clock">00'</div>
+      </div>
+      <div class="bar" aria-hidden="true"><div id="progress"></div></div>
+      <dl>
+        <dt>Match</dt><dd id="matchId">–</dd>
+        <dt>Events sent</dt><dd id="sentA">0</dd>
+        <dt>Tracking batches</dt><dd id="sentB">0</dd>
+        <dt>Running for</dt><dd id="elapsed">–</dd>
+      </dl>
+      <p class="note" id="message">Pick a storyline and press Play. The first run of a storyline takes about a minute to prepare.</p>
+    </section>
+  </div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+let needsKey = false;
+
+async function loadStories() {
+  const r = await fetch("api/storylines");
+  const data = await r.json();
+  needsKey = data.passcode_required;
+  $("keyField").hidden = !needsKey;
+  $("stories").innerHTML = data.storylines.map((s, i) => `
+    <label class="story">
+      <input type="radio" name="story" value="${s.name}" ${i === 0 ? "checked" : ""}>
+      <span><b>${s.title}</b><small>${s.home ? `${s.home} v ${s.away}` : "Random fixture and moments"}</small></span>
+    </label>`).join("");
+  document.querySelectorAll('input[name=story]').forEach(el => el.addEventListener("change", syncSeed));
+  syncSeed();
+}
+
+function syncSeed() {
+  const story = document.querySelector('input[name=story]:checked').value;
+  $("seedField").hidden = story !== "random";
+}
+
+function headers() {
+  const h = {"Content-Type": "application/json"};
+  if (needsKey) h["X-Control-Key"] = $("key").value;
+  return h;
+}
+
+async function act(path, body) {
+  $("error").textContent = "";
+  try {
+    const r = await fetch(path, {method: "POST", headers: headers(), body: JSON.stringify(body || {})});
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      $("error").textContent = d.detail || `Request failed (${r.status})`;
+    }
+  } catch (e) {
+    $("error").textContent = "Can't reach the match control service. Check your connection and try again.";
+  }
+  refresh();
+}
+
+$("play").addEventListener("click", () => {
+  const storyline = document.querySelector('input[name=story]:checked').value;
+  const seedValue = parseInt($("seed").value, 10);
+  if (storyline === "random" && (isNaN(seedValue) || seedValue < 0)) {
+    $("error").textContent = "Enter a seed of 0 or more for a random match.";
+    return;
+  }
+  act("api/play", {
+    storyline,
+    seed: storyline === "random" ? seedValue : null,
+    speed: parseFloat(document.querySelector('input[name=speed]:checked').value),
+    mess: $("mess").value,
+  });
+});
+$("stop").addEventListener("click", () => act("api/stop"));
+$("seed").addEventListener("input", () => { $("error").textContent = ""; });
+
+const PHASES = {idle: ["Idle", ""], preparing: ["Preparing", "wait"], streaming: ["Live", "live"],
+  "half-time": ["Half-time", "wait"], finished: ["Full time", ""], stopped: ["Stopped", ""], error: ["Error", "bad"]};
+
+async function refresh() {
+  try {
+    const s = await (await fetch("api/status")).json();
+    const [label, cls] = PHASES[s.phase] || [s.phase, ""];
+    $("phase").textContent = label;
+    $("phase").className = "pill " + cls;
+    $("teams").textContent = s.home_name ? `${s.home_name} v ${s.away_name}` : (s.phase === "preparing" ? "Getting the match ready" : "No match playing");
+    $("clock").textContent = `${String(Math.floor(s.minute || 0)).padStart(2, "0")}'`;
+    const done = (s.sent.A + s.sent.B);
+    $("progress").style.width = s.total ? `${Math.min(100, 100 * done / s.total)}%` : "0";
+    $("matchId").textContent = s.match_id ? `${s.match_id} · ${s.storyline}${s.seed != null && s.storyline === "random" ? " #" + s.seed : ""} · ${s.speed}×` : "–";
+    $("sentA").textContent = s.sent.A.toLocaleString();
+    $("sentB").textContent = s.sent.B.toLocaleString();
+    $("elapsed").textContent = s.started_at ? `${Math.round(s.elapsed_s)} s` : "–";
+    if (s.message) $("message").textContent = s.message;
+    const running = ["preparing", "streaming", "half-time"].includes(s.phase);
+    $("play").disabled = running;
+    $("stop").disabled = !running;
+  } catch (e) {}
+}
+
+loadStories();
+refresh();
+setInterval(refresh, 1000);
+</script>
+</body>
+</html>
