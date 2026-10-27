@@ -1,5 +1,5 @@
 // Reading a replay at any moment t (ms of play since kick-off, continuous across halves).
-import type { Cue, Replay, Side, TacticsItem } from "./types";
+import type { Cue, Language, Replay, Side, TacticsItem, ViewerType } from "./types";
 
 export interface Snapshot {
   period: number;
@@ -142,10 +142,18 @@ export interface Caption {
   text: string;
   tone: "goal" | "card" | "tactic" | "info";
   source: string;
+  /** "agent" or "template" for Insight Generation captions; "auto" for the screen's own. */
+  origin: "agent" | "template" | "auto";
 }
 
+const INSIGHT_TONE: Record<string, Caption["tone"]> = {
+  expect: "tactic", confirmed: "tactic", retracted: "tactic", shift: "tactic",
+  summary: "tactic", check_in: "info", external: "info",
+};
+
 /** Captions written from the numbers alone (caption_source "template"); agents add theirs later. */
-export function captionAt(r: Replay, t: number): Caption | null {
+export function captionAt(r: Replay, t: number, viewer: ViewerType = "casual",
+                          lang: Language = "en"): Caption | null {
   let best: Caption | null = null;
   const consider = (c: Caption, hold: number, rank: number) => {
     if (t < c.t || t - c.t > hold) return;
@@ -153,40 +161,51 @@ export function captionAt(r: Replay, t: number): Caption | null {
     const bestScore = best ? (best as any)._s : -1;
     if (score > bestScore) best = Object.assign(c, { _s: score });
   };
+  // Insight Generation captions replace the screen's own trigger captions
+  const insights = r.insights ?? [];
+  const explained = new Set(insights.map((x) => x.trigger_id));
+  for (let i = lastIndex(insights, t, (x) => x.t); i >= 0 && t - insights[i].t < 12_000; i--) {
+    const x = insights[i];
+    const text = x.captions[`${viewer}.${lang}`] ?? x.captions[`${viewer}.en`];
+    if (!text) continue;
+    const rank = x.evidence.event_ids.length && x.kind === "expect" ? 3.5 : 2.5;
+    consider({ t: x.t, tone: INSIGHT_TONE[x.kind] ?? "info", source: x.insight_id, text,
+               origin: x.caption_source }, 10_000, rank);
+  }
   for (let i = lastIndex(r.events, t, (e) => e.t); i >= 0 && t - r.events[i].t < 12_000; i--) {
     const e = r.events[i];
     if (e.type === "shot" && e.outcome === "goal") {
       const [h, a] = scoreAt(r, e.t);
-      consider({ t: e.t, tone: "goal", source: e.id,
+      consider({ t: e.t, tone: "goal", source: e.id, origin: "auto",
         text: `Goal — ${surname(r, e.player)} for ${clubName(r, e.team)}. ${r.home.name} ${h}–${a} ${r.away.name}` }, 10_000, 4);
     } else if (e.type === "card") {
-      consider({ t: e.t, tone: "card", source: e.id,
+      consider({ t: e.t, tone: "card", source: e.id, origin: "auto",
         text: `${e.outcome === "red" ? "Red" : "Yellow"} card — ${surname(r, e.player)} (${clubName(r, e.team)})` }, 8_000, 3);
     } else if (e.type === "sub_on") {
-      consider({ t: e.t, tone: "info", source: e.id,
+      consider({ t: e.t, tone: "info", source: e.id, origin: "auto",
         text: `Substitution — ${surname(r, e.player)} comes on for ${clubName(r, e.team)}` }, 6_000, 1);
     }
   }
   for (let i = lastIndex(r.tactics, t, (x) => x.t); i >= 0 && t - r.tactics[i].t < 12_000; i--) {
     const x = r.tactics[i];
-    if (x.kind !== "trigger" || x.type !== "shift") continue;
+    if (x.kind !== "trigger" || x.type !== "shift" || explained.has(x.trigger_id)) continue;
     const key = Object.keys(x.after ?? {})[0];
     if (!key) continue;
     if (key === "player_position") {
-      consider({ t: x.t, tone: "tactic", source: x.trigger_id,
+      consider({ t: x.t, tone: "tactic", source: x.trigger_id, origin: "auto",
         text: `${x.player_id ? surname(r, x.player_id) : "A player"} takes up a new position for ${clubName(r, x.team_id)}` }, 8_000, 2);
       continue;
     }
     const label = CHANGE_LABEL[key] ?? key.replace(/_/g, " ");
     const fmt = (v: any) => (typeof v === "number" ? (key.endsWith("_m") ? `${v.toFixed(0)} m` : v.toFixed(1)) : String(v));
-    consider({ t: x.t, tone: "tactic", source: x.trigger_id,
+    consider({ t: x.t, tone: "tactic", source: x.trigger_id, origin: "auto",
       text: `${clubName(r, x.team_id)} change their ${label}: ${fmt(x.before[key])} → ${fmt(x.after[key])}` }, 10_000, 2);
   }
   for (const c of activeCues(r, t, ["speed_alert", "shot_speed"])) {
     const text = c.kind === "speed_alert"
       ? `${surname(r, c.data.player_id)} hits ${c.data.speed_kmh} km/h`
       : `Shot by ${surname(r, c.data.player_id)} at ${c.data.speed_kmh} km/h · xG ${c.data.xg?.toFixed(2)}`;
-    consider({ t: c.t, tone: "info", source: c.id, text }, 4_000, c.kind === "shot_speed" ? 2 : 1);
+    consider({ t: c.t, tone: "info", source: c.id, origin: "auto", text }, 4_000, c.kind === "shot_speed" ? 2 : 1);
   }
   return best;
 }

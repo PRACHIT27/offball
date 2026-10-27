@@ -1,0 +1,9 @@
+# Allowlist: only what Dockerfile.insights needs reaches the build (never .env, .venv, feeds)
+*
+!pyproject.toml
+!ingest/
+!engine/
+!insights/
+!mcp_stats/
+**/__pycache__
+ingest/functionapp/

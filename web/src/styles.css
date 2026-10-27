@@ -41,6 +41,7 @@ button, select { font: inherit; color: inherit; }
 .controls .play { width: 40px; font-size: 13px; }
 .seg { display: inline-flex; }
 .seg button { border-radius: 0; text-transform: capitalize; }
+.seg.lang button { text-transform: uppercase; }
 .seg button:first-child { border-radius: 6px 0 0 6px; }
 .seg button:last-child { border-radius: 0 6px 6px 0; }
 .seg button.on { background: var(--pitch); border-color: var(--pitch-line); }

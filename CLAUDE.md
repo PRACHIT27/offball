@@ -189,6 +189,36 @@ Output folders: `feeds/` (feed_a.jsonl, feed_b.jsonl), `answer-keys/` (answer_ke
 | Tests | `python -m pytest tests/tactics` |
 | Live | Engine with `TACTICS_ENABLED=1` publishes to hubs `stats` (consumer groups `bridge`, `fabric`) and `triggers` (`agents`, `fabric`); deploy with `TACTICS_ENABLED=1 scripts/deploy_engine.sh` |
 
+## Lane 2: Insight Generation
+
+`insights/` turns each Tactical Intelligence trigger into an insight with 12 captions (analyst,
+casual, supporter_home, supporter_away × en, es, hi), per [lld-insight-generation.md](docs/design/lld-insight-generation.md).
+Every number in a caption comes from the trigger's facts (`insights/facts.py`) or an MCP tool result.
+
+Agent team (`insights/agents.py`, `insights/workflow.py`, prompts in `insights/prompts/`): coordinator
+(code) → tactics agents (home, away, in parallel, MCP tools) → shift explainer → storyteller (one call
+per language, in parallel) → checker (`insights/checker.py`: numbers, units, direction words, expect
+targets, jargon, word limits; then `insights/safety.py`: Translator back-check of es/hi and Content
+Safety) with up to 2 rewrites, then the template per caption. Run one match at a time: two at once hit
+the deployment's rate limit. A middleware pins
+every tool call's `as_of` to the trigger's moment, enforces tool budgets and records results for the
+checker.
+
+| Task | Command |
+|---|---|
+| Insights for a match, added to its replay | `python -m insights.local --feeds local_feeds/m001/feeds --match m001 --replay web/public/replays/m001.json` (after `scripts/build_replay.py`, which rewrites the file) |
+| Output | `local_out/<match>/insights/insights.jsonl`; inputs cached in `local_out/<match>/insights/data/` |
+| With the agent team (Foundry) | add `--agents` (needs `az login` with access to `offball-ai-kr2610`); about 3 minutes per match |
+| MCP stats server alone | `OFFBALL_MATCH_DATA=local_out/m001/insights/data python -m mcp_stats.server` (stdio; works with any MCP client) |
+| Tests | `python -m pytest tests/insights` |
+
+**Azure:** AI Services (Foundry) `offball-ai-kr2610` in **Sweden Central** (the subscription allows
+only canadacentral, mexicocentral, swedencentral, westus2 and belgiumcentral; westus2 has no small-model
+quota), endpoint `https://offball-ai-kr2610.cognitiveservices.azure.com/`, deployment `gpt-5-mini`
+(GlobalStandard, 100K TPM; call it with `reasoning_effort="minimal"`). Key access is off: use Entra ID
+(`Cognitive Services OpenAI User`, `Cognitive Services User`). gpt-4o-mini is retired and gpt-4.1-mini
+has no quota here.
+
 ## Lane 3: Viewer screen
 
 `web/` (React + TypeScript + Vite) plays replays built by `scripts/build_replay.py` (a simulated match through ingestion, metrics and tactics). Details: [web/README.md](web/README.md).

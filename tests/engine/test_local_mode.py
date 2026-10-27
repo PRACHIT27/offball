@@ -64,7 +64,7 @@ def test_recovery_at_light_mess(light, tmp_path):
 
 
 def test_live_code_never_reads_the_answer_key():
-    for package in ("ingest", "engine"):
+    for package in ("ingest", "engine", "insights"):
         for path in (REPO / package).rglob("*.py"):
             text = path.read_text().lower()
             assert "answer" not in text and "tests." not in text, path

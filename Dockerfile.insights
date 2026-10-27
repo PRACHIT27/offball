@@ -1,0 +1,13 @@
+# Live Insight Generation: triggers in, checked captions out, live page on :8080. linux/amd64.
+FROM python:3.12-slim
+WORKDIR /app
+COPY pyproject.toml ./
+COPY ingest ingest
+COPY engine engine
+COPY insights insights
+COPY mcp_stats mcp_stats
+RUN pip install --no-cache-dir ".[azure,insights]"
+USER 1000
+ENV INSIGHTS_DATA_ROOT=/tmp/offball-insights PORT=8080
+EXPOSE 8080
+CMD ["python", "-m", "insights.service"]

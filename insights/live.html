@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OffBall Live Captions</title>
+<style>
+  :root {
+    --bg: #0d1512; --panel: #15211c; --line: #24352e; --text: #e8f0ec; --muted: #8fa39a;
+    --accent: #3ddc84; --tactic: #6cb6ff; --info: #c9a227;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  .brand { font-weight: 800; font-size: 20px; letter-spacing: .5px; }
+  .brand span { color: var(--accent); }
+  .live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-left: 10px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.on { background: #ff4d4d; animation: pulse 1.4s infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; }
+  select, button { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font: inherit; font-size: 13px; }
+  .seg { display: inline-flex; }
+  .seg button { border-radius: 0; }
+  .seg button:first-child { border-radius: 6px 0 0 6px; }
+  .seg button:last-child { border-radius: 0 6px 6px 0; }
+  .seg button.on { background: var(--line); border-color: var(--accent); }
+  .now { margin: 24px 0 8px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 18px 20px; min-height: 92px; }
+  .now .meta, .item .meta { display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .now .text { font-size: 22px; line-height: 1.35; }
+  .badge { font-family: ui-monospace, Menlo, monospace; font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; }
+  .badge.agent { color: var(--accent); border-color: var(--accent); }
+  .kind { text-transform: uppercase; letter-spacing: .6px; font-weight: 600; }
+  .kind.expect, .kind.confirmed, .kind.retracted, .kind.shift, .kind.summary { color: var(--tactic); }
+  .kind.check_in, .kind.external { color: var(--info); }
+  h2 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin: 28px 0 8px; font-weight: 600; }
+  .item { border-bottom: 1px solid var(--line); padding: 12px 2px; }
+  .item .text { font-size: 15px; line-height: 1.45; }
+  .empty { color: var(--muted); padding: 24px 0; }
+  .foot { margin-top: 28px; font-size: 12px; color: var(--muted); }
+  @media (max-width: 520px) { .now .text { font-size: 18px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">Off<span>Ball</span> <span class="live"><i class="dot" id="dot"></i><b id="status">waiting</b></span></div>
+    <div class="controls">
+      <select id="match" aria-label="Match"></select>
+      <div class="seg" id="viewer" role="group" aria-label="Viewer type"></div>
+      <div class="seg" id="lang" role="group" aria-label="Language"></div>
+    </div>
+  </header>
+  <div class="now" aria-live="polite" id="now"><div class="empty">Press Play on match control; captions appear here as the agents write them.</div></div>
+  <h2>Earlier</h2>
+  <div id="feed"></div>
+  <p class="foot">Every number is checked against the match data before it goes on air. <b>AI</b> = written by the agent team; <b>auto</b> = template fallback.</p>
+</div>
+<script>
+const VIEWERS = [["casual", "Casual"], ["analyst", "Analyst"], ["supporter_home", "Home fan"], ["supporter_away", "Away fan"]];
+const LANGS = [["en", "EN"], ["es", "ES"], ["hi", "HI"]];
+const state = { match: null, viewer: "casual", lang: "en", rows: [], since: 0, matches: [] };
+try { Object.assign(state, JSON.parse(localStorage.getItem("offball.live") || "{}"), { rows: [], since: 0 }); } catch {}
+
+function seg(id, options, key) {
+  const el = document.getElementById(id);
+  el.innerHTML = "";
+  for (const [value, label] of options) {
+    const b = document.createElement("button");
+    b.textContent = label;
+    b.className = state[key] === value ? "on" : "";
+    b.onclick = () => { state[key] = value; save(); seg(id, options, key); render(); };
+    el.appendChild(b);
+  }
+}
+function save() { try { localStorage.setItem("offball.live", JSON.stringify({ viewer: state.viewer, lang: state.lang, match: state.match })); } catch {} }
+function minute(r) { const m = Math.floor(r.at_ms / 60000); return r.period === 1 && m > 45 ? `45+${m - 45}'` : r.period === 2 && m > 90 ? `90+${m - 90}'` : `${m}'`; }
+function card(r, big) {
+  const d = document.createElement("div");
+  d.className = big ? "" : "item";
+  const text = r.captions[`${state.viewer}.${state.lang}`] || r.captions[`${state.viewer}.en`];
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.innerHTML = `<b>${minute(r)}</b><span class="kind ${r.kind}">${r.kind.replace("_", " ")}</span>` +
+    `<span class="badge ${r.caption_source}">${r.caption_source === "agent" ? "AI" : "auto"}</span>`;
+  const t = document.createElement("div");
+  t.className = "text";
+  t.lang = state.lang;
+  t.textContent = text;
+  d.append(meta, t);
+  return d;
+}
+function render() {
+  const rows = [...state.rows].sort((a, b) => b.t - a.t);
+  const now = document.getElementById("now"), feed = document.getElementById("feed");
+  now.innerHTML = ""; feed.innerHTML = "";
+  if (!rows.length) { now.innerHTML = '<div class="empty">Press Play on match control; captions appear here as the agents write them.</div>'; return; }
+  now.appendChild(card(rows[0], true));
+  rows.slice(1, 40).forEach(r => feed.appendChild(card(r, false)));
+}
+async function loadMatches() {
+  try {
+    state.matches = await (await fetch("api/matches")).json();
+    const sel = document.getElementById("match");
+    const ids = state.matches.map(m => m.match_id);
+    if (!ids.includes(state.match)) { state.match = ids[0] || null; state.rows = []; state.since = 0; }
+    sel.innerHTML = state.matches.map(m => `<option value="${m.match_id}">${m.home} v ${m.away} · ${m.insights} insights</option>`).join("") || "<option>No live match yet</option>";
+    sel.value = state.match || "";
+  } catch {}
+}
+async function poll() {
+  const dot = document.getElementById("dot"), status = document.getElementById("status");
+  if (!state.match) { status.textContent = "waiting for a match"; dot.className = "dot"; return; }
+  try {
+    const r = await (await fetch(`api/insights?match_id=${encodeURIComponent(state.match)}&since=${state.since}`)).json();
+    if (r.insights.length) { state.rows.push(...r.insights); state.since = Math.max(...r.insights.map(i => i.received_at)); render(); }
+    const fresh = state.rows.length && r.now - state.since < 120;
+    dot.className = fresh ? "dot on" : "dot"; status.textContent = fresh ? "live" : `${state.rows.length} insights`;
+  } catch { status.textContent = "reconnecting"; dot.className = "dot"; }
+}
+document.getElementById("match").onchange = e => { state.match = e.target.value; state.rows = []; state.since = 0; save(); render(); poll(); };
+seg("viewer", VIEWERS, "viewer"); seg("lang", LANGS, "lang");
+loadMatches().then(poll);
+setInterval(poll, 2000); setInterval(loadMatches, 5000);
+</script>
+</body>
+</html>

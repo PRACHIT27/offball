@@ -81,6 +81,22 @@ export interface Replay {
   xg: XgPoint[];
   totals: TotalsPoint[];
   tactics: TacticsItem[];
+  /** Insight Generation output (absent in replays built before it existed). */
+  insights?: Insight[];
+}
+
+export type Language = "en" | "es" | "hi";
+
+export interface Insight {
+  t: number;
+  insight_id: string;
+  trigger_id: string;
+  kind: "expect" | "confirmed" | "retracted" | "shift" | "check_in" | "summary" | "external";
+  team_id: string | null;
+  /** Keyed `{viewer_type}.{language}`, e.g. `analyst.es`. */
+  captions: Record<string, string>;
+  evidence: { event_ids: string[]; window_ids: string[] };
+  caption_source: "agent" | "template";
 }
 
 export interface MatchListing {

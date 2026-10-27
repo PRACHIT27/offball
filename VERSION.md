@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.5.1`**
+**Doc set version: `v2.8.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,45 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.8.0 · 2026-10-27 · Kanika
+**Files:** CLAUDE.md, VERSION.md (code: `insights/safety.py`, `insights/checker.py`, `insights/workflow.py`, `web/public/replays/m00{1,2,3}.json`)
+**Type:** MINOR
+- Checker rules 3 and 5 (IG-23, IG-24), keyless on `offball-ai-kr2610`:
+  - **Translator back-check:** Spanish and Hindi captions are translated back to English and checked like English ones.
+  - **Content Safety:** screens every caption; any severity above 0 takes the caption off air.
+  - **Failure handling:** a flagged caption goes back to the storyteller with the reason. If a service is down, the captions it couldn't check fall back to their templates.
+- Grounding fixes:
+  - IDs (`w-NGU-2-5030-5530`) no longer count as allowed numbers.
+  - A number in a fact's name counts (`xg_per_10_minutes` allows 10).
+  - A colon no longer separates a claim from its numbers.
+  - Rounding to the boundary passes (8.15 → 8.2).
+- All three replays (`m001` red card, `m002` comeback, `m003` switch) carry agent captions.
+- The `gpt-5-mini` deployment (100K TPM) rate-limits two matches at once: run matches one at a time.
+- **Action required:** Lane 3 (viewer): the replays now carry `insights`. Rebuilding a replay with `scripts/build_replay.py` drops them; rerun `python -m insights.local … --agents --replay …` after it.
+
+## v2.7.0 · 2026-10-27 · Kanika
+**Files:** CLAUDE.md, VERSION.md (code: `insights/`, `mcp_stats/`, `tests/insights/`, `web/public/replays/m001.json`)
+**Type:** MINOR
+- Insight Generation steps 2–4: the code checker (LLD §8 rules 1, 2 and 4, plus units, pitch coordinates, abbreviations, "expect" targets and word limits), the MCP stats server (`mcp_stats/`, 10 tools over Tactical Intelligence's windows and the clean events, `as_of` cut-off) and the agent team on Microsoft Agent Framework with gpt-5-mini.
+- Red-card match: every insight comes from the agents (template fallback only per caption); expect insights take 5–8 s and the others a median of about 15 s, inside the 8 s / 20 s deadlines.
+- Deviations from the Insight Generation design:
+  - **Expect runs without the tactics agents.** They take 6–8 s and can't fit the 8 s deadline; the trigger already carries the team's current state, and the tactics agents check the prediction at confirm-due time.
+  - **The coordinator and checker are code only** (no model). The storyteller writes one language per call, three in parallel.
+  - **Spanish word limits are 20% longer** than the English ones; Hindi has none.
+  - **"Normal style" is the team's own minutes 5–15 of this match**, as in Tactical Intelligence.
+  - **No `get_player_stats` yet:** Performance Metrics data isn't in the Stats API.
+- The style dial runs from 0 (patient, short passing) to 100 (direct, long balls).
+- Not built yet: Translator back-check, Content Safety, Cosmos storage of insights, the live `triggers` listener, checkpoints and recovery, recaps, Ask the studio.
+
+## v2.6.0 · 2026-10-27 · Kanika
+**Files:** CLAUDE.md, VERSION.md (code: `insights/`, `tests/insights/`, `web/src/`, `web/public/replays/m001.json`, pyproject.toml)
+**Type:** MINOR
+- Insight Generation started (Kanika owns it). Step 1: an insight per trigger with 12 template captions (4 viewer types × en, es, hi), written only from the trigger's facts (IG-3, IG-22, IG-25, IG-31). Kinds: expect (crux), confirmed / retracted (confirm due, using Tactical Intelligence's change thresholds), shift, summary, check-in, external.
+- The viewer screen shows insight captions for the chosen viewer type, and gains an EN / ES / HI switch. Captions are marked `AI` (agent) or `auto` (template). Insight captions replace the screen's own shift captions for the same trigger. `m001.json` carries the insights.
+- New Azure: AI Services `offball-ai-kr2610` (Sweden Central, keys off) with `gpt-5-mini`; details in CLAUDE.md.
+- `tests/engine/test_local_mode.py` now also guards `insights/` against reading the answer key. That test already failed on `main` because `engine/tactics/local.py` has `--answer-key`.
+- **Action required:** Tactical Intelligence moves answer-key scoring out of `engine/tactics/local.py` (for example into `tests/`) or narrows the guard. Lane 3: `scripts/build_replay.py` rewrites a replay without insights; run `python -m insights.local … --replay` after it.
 
 ## v2.5.1 · 2026-10-27 · Archit
 **Files:** README.md, CLAUDE.md, VERSION.md (code: `web/public/staticwebapp.config.json`, `.github/workflows/web.yml`, `web/README.md`)
