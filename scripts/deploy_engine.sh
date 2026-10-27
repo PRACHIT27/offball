@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Build the match engine image, push it to ACR and create/update the Container App.
 # Needs Docker running locally (ACR Tasks are not allowed on this subscription).
-# Usage: [SUFFIX=kr2610 RG=offball-rg LOC=westus2] scripts/deploy_engine.sh [tag]
+# Usage: [SUFFIX=kr2610 RG=offball-rg LOC=westus2 TACTICS_ENABLED=1 METRICS_ENABLED=1] scripts/deploy_engine.sh [tag]
 set -euo pipefail
+export MSYS_NO_PATHCONV=1
 cd "$(dirname "$0")/.."
 
 TAG=${1:-$(git rev-parse --short HEAD)}
@@ -55,6 +56,8 @@ body = {
           {"name": "STORAGE_ACCOUNT_URL", "value": "https://offballst$SUFFIX.blob.core.windows.net"},
           {"name": "COSMOS_ENDPOINT", "value": "$COSMOS"},
           {"name": "APPLICATIONINSIGHTS_CONNECTION_STRING", "secretRef": "appinsights"},
+          {"name": "TACTICS_ENABLED", "value": "${TACTICS_ENABLED:-0}"},
+          {"name": "METRICS_ENABLED", "value": "${METRICS_ENABLED:-0}"},
         ],
       }],
       # One replica: each match's merge state lives in one process

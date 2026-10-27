@@ -142,7 +142,8 @@ teammate: [engine/metrics/README.md](engine/metrics/README.md).
 | Design | Build as [lld-performance-metrics.md](docs/design/lld-performance-metrics.md) specifies; decisions beyond it are listed in the README's "Decisions and open items" |
 | Branch | `performance-metrics` (carries the Data Ingestion work it builds on). Never push to `main` |
 | Python | Same `.venv` as Data Ingestion, with Azure extras: `uv pip install --python .venv -e '.[dev,azure]' azure-functions` |
-| Local first | `python -m engine.metrics.local --feeds local_feeds/fx01/feeds --out local_out --match fx01` |
+| Local first | `python -m engine.metrics.local --feeds local_feeds/m001/feeds --out local_out --match m001` (any `python -m sim generate` match or fixture) |
+| Live | Engine with `METRICS_ENABLED=1` (after the Cosmos `metrics` container exists); deploy with `METRICS_ENABLED=1 scripts/deploy_engine.sh` |
 | Plain functions | Formulas in `engine/metrics/calc/` (no state, no I/O); Azure SDK clients only in `engine/service.py`, injected into `sinks_azure.py` |
 | Numbers | Every number comes from code and carries evidence (event IDs, frames); nothing reads `answer-keys/` except `tests/metrics/test_truth.py` |
 | Azure changes | Ask before creating any resource; the commands needed are in the README |
@@ -151,9 +152,40 @@ teammate: [engine/metrics/README.md](engine/metrics/README.md).
 
 | Teammate | Builds on | Where |
 |---|---|---|
-| Tactical Intelligence | `PressureSample` per frame and `PassValues` per pass, by direct call; `pressure()`, `pitch_value()`; shared `FrameMemory` | README §Tactical Intelligence, `engine/metrics/models.py` |
+| Tactical Intelligence | Optional: `PressureSample` per frame and `PassValues` per pass, by direct call (tactics currently computes its own); both share the `stats` hub, kinds don't overlap | README §Tactical Intelligence |
 | Insight Generation (Stats API, MCP) | Cosmos `metrics`: cumulative `player:{id}:{clock}` totals, `event:{id}:{version}` results | README §Insight Generation |
 | Broadcast, Audience | `stats` hub: `positions`, `player_totals`, `heatmap`, `pass`, `shot`, `xg`; number-only cues with `type=cue` | README §Broadcast and Audience |
-| Platform | Beyond `azure-setup.sh`: `stats` hub + consumer groups, Cosmos `metrics`, Data Sender on `stats` and the Cosmos role on `metrics` for `id-engine` | README §Platform |
-| Data Ingestion | `EngineCore(router=MetricsRouter)` in `engine/service.py` | README §Data Ingestion |
+| Platform | Before `METRICS_ENABLED=1`: Cosmos container `metrics` and `id-engine`'s Cosmos role on it (the `stats` hub exists); optional `cues` consumer group | README §Platform |
+| Data Ingestion | `engine/service.py` fans the router hook out to metrics and tactics (`fan_out`) | README §Data Ingestion |
 | Match Simulation | `provider_xg` on every shot; realistic acceleration | README §Match Simulation |
+
+## Lane 1: Match Simulation
+
+`sim/` is the real simulator. It reuses the feed writers, mess rules and streamer from `tests/fixturegen/`, so its feeds follow ingestion §13 and run through the deployed ingestion unchanged.
+
+| Task | Command |
+|---|---|
+| Generate a match (feeds + answer key + truth files) | `python -m sim generate --storyline red_card --out local_feeds/m001` |
+| Storylines | `red_card` (m001), `comeback` (m002), `switch` (m003), `late_drama` (m004), `press_fade` (m005), `storm` (m006); `random --seed N` invents a new match story per seed; or a JSON file |
+| Short match for quick tests | add `--minutes 5` |
+| Run ingestion on it | `python -m engine.local --feeds local_feeds/m001/feeds --out local_out/m001 --match m001` |
+| Stream into Azure | `python -m sim stream --feeds local_feeds/m001/feeds --speed 10` |
+| Tests | `python -m pytest tests/sim` (full-match tests take about a minute each) |
+| Match control page, local (counts instead of sending) | `python -m sim.control --dry-run --port 8765`, then open http://localhost:8765 |
+| Match control, live | https://offball-sim.whitemoss-2f18829c.westus2.azurecontainerapps.io (no passcode) |
+| Deploy match control to Azure (Docker + `az login`) | `[CONTROL_PASSCODE=…] scripts/deploy_sim.sh`: Container App `offball-sim` in `offball-env`, identity `id-sim` with send-only access to the raw hubs |
+
+Output folders: `feeds/` (feed_a.jsonl, feed_b.jsonl), `answer-keys/` (answer_key.json with tactic changes and true player stats, frames_truth.npz with possession per frame), `match/` (match.json, prematch.json, events.jsonl, frames.parquet).
+
+## Lane 1: Tactical Intelligence
+
+`engine/tactics/` reads the merge stage's clean output (same router hook as Performance Metrics) and needs nothing else.
+
+| Task | Command |
+|---|---|
+| Run on a generated match | `python -m engine.tactics.local --feeds local_feeds/m001/feeds --match m001 --answer-key local_feeds/m001/answer-keys/answer_key.json` |
+| Output | `local_out/<match>/tactics/`: windows, series, territory, notes, triggers (JSONL) and `scoring.json` |
+| Tune thresholds | JSON file passed with `--config` or `TACTICS_CONFIG`; every field of `engine/tactics/config.py` |
+| Tests | `python -m pytest tests/tactics` |
+| Live | Engine with `TACTICS_ENABLED=1` publishes to hubs `stats` (consumer groups `bridge`, `fabric`) and `triggers` (`agents`, `fabric`); deploy with `TACTICS_ENABLED=1 scripts/deploy_engine.sh` |
+

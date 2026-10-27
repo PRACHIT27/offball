@@ -11,18 +11,20 @@ engine. The merge stage hands it every clean message by direct call, and it send
 
 ```sh
 uv venv --python 3.12 .venv && uv pip install --python .venv -e '.[dev,azure]' azure-functions
-python -m tests.fixturegen --out local_feeds/fx01 --mess light
-python -m engine.metrics.local --feeds local_feeds/fx01/feeds --out local_out --match fx01
+python -m sim generate --storyline red_card --out local_feeds/m001      # the real simulator
+python -m engine.metrics.local --feeds local_feeds/m001/feeds --out local_out --match m001
 pytest tests/metrics
 ```
 
-Local mode writes `local_out/metrics/fx01/stats.jsonl`, `cues.jsonl` and `metrics.json`. These are
-the same messages and documents the Azure path sends. A 90-minute fixture match takes about 40 s
-and peaks at about 155 MB.
+Local mode writes `local_out/metrics/m001/stats.jsonl`, `cues.jsonl` and `metrics.json`. These are
+the same messages and documents the Azure path sends. A 90-minute match takes about 40 s and peaks
+at about 155 MB. The stand-in fixture (`python -m tests.fixturegen`) works too.
 
-On Azure, `python -m engine.service` (Kanika's match engine Container App) runs the merge stage and
-Performance Metrics together. Before metrics can run there, the resources listed under
-[Platform](#platform-and-whoever-runs-az) must exist. Until then, set `METRICS_ENABLED=0`.
+On Azure, `python -m engine.service` (the match engine Container App) runs the merge stage and
+hands every merge output to Performance Metrics and Tactical Intelligence. Metrics is **off unless
+`METRICS_ENABLED=1`**, and needs the Cosmos container listed under
+[Platform](#platform-and-whoever-runs-az) first. Deploy it with
+`METRICS_ENABLED=1 scripts/deploy_engine.sh`.
 
 ## What is built
 
@@ -45,6 +47,14 @@ Performance Metrics together. Before metrics can run there, the resources listed
 ## Who builds on what
 
 ### Tactical Intelligence
+
+**Status:** tactics (`engine/tactics/`, v2.4.0) computes its own pressing and pitch value from
+frames and events, and doesn't use the hand-off below today. Both domains share the `stats` hub, and
+their kinds don't overlap:
+- metrics: `positions`, `player_totals`, `heatmap`, `pass`, `shot`, `xg` and cues;
+- tactics: `window`, `series`, `territory`, `note`.
+
+The hand-off stays available if tactics wants metrics' carrier pressure.
 
 **Pressure and pass values arrive by direct call, in the same process.** Register a callback on
 the publisher:
@@ -97,7 +107,7 @@ Use the message properties to route it:
 
 | Property | Values |
 |---|---|
-| `type` | `stats` (screen data) or `cue` (number-only overlay cue) |
+| `type` | `stats` (screen data) or `cue` (number-only overlay cue). Metrics only: Tactical Intelligence's messages on the same hub carry `kind` and `match_id` but no `type` |
 | `kind` | stats kind or cue kind (below) |
 | `match_id`, `emitted_at` | Match, UTC send time for delay measurement |
 
@@ -132,26 +142,23 @@ A stats message carries `version` and `status`. A corrected pass is sent again w
 
 ### Platform (and whoever runs `az`)
 
-Kanika's `azure-setup.sh` already creates `id-engine` and its roles for the merge stage. Its Cosmos
-role is scoped to `events` only. Metrics needs two more resources and two more roles in
-`offball-rg`, and the commands are below. **They have not been run**: ask the owner first, as the
-Lane 1 rules require. They could also go into `azure-setup.sh` step 10.
+Since v2.4.0 the `stats` hub exists:
+- 2 partitions, consumer groups `bridge` and `fabric`;
+- `id-engine` has Data Sender on it.
+
+Kanika's `azure-setup.sh` scopes `id-engine`'s Cosmos role to `events` only. **Before
+`METRICS_ENABLED=1`, only the Cosmos part below is still needed.** The `cues` consumer group is
+optional, for the cue manager. **These commands have not been run**: ask the owner first, as the
+Lane 1 rules require.
 
 ```sh
 RG=offball-rg; EH=offball-eh-kr2610; COSMOS=offball-cosmos-kr2610
 ENGINE_PRINCIPAL_ID=$(az identity show -g $RG -n id-engine --query principalId -o tsv)
 
-# stats hub: the engine sends; the PubSub bridge, cue manager and Fabric each read with their own group
-az eventhubs eventhub create -g $RG --namespace-name $EH --name stats \
-  --partition-count 4 --retention-time 24 --cleanup-policy Delete
-for g in bridge cues fabric; do
-  az eventhubs eventhub consumer-group create -g $RG --namespace-name $EH --eventhub-name stats --name $g
-done
-az role assignment create --assignee-object-id $ENGINE_PRINCIPAL_ID --assignee-principal-type ServicePrincipal \
-  --role "Azure Event Hubs Data Sender" \
-  --scope $(az eventhubs eventhub show -g $RG --namespace-name $EH --name stats --query id -o tsv)
+# Optional: a consumer group for the cue manager (the hub, bridge and fabric groups exist)
+az eventhubs eventhub consumer-group create -g $RG --namespace-name $EH --eventhub-name stats --name cues
 
-# Cosmos metrics container; the engine writes it, the Stats API reads it
+# Needed: Cosmos metrics container; the engine writes it, the Stats API reads it
 az cosmosdb sql container create -g $RG --account-name $COSMOS --database-name offball \
   --name metrics --partition-key-path /match_id
 az cosmosdb sql role assignment create -g $RG --account-name $COSMOS \
@@ -160,8 +167,8 @@ az cosmosdb sql role assignment create -g $RG --account-name $COSMOS \
 ```
 
 - **Engine Container App environment variables:** `AZURE_CLIENT_ID`, `EVENTHUB_NAMESPACE`,
-  `COSMOS_ENDPOINT` and `STORAGE_ACCOUNT_URL` (as before), plus optional `METRICS_ENABLED`
-  (default `1`).
+  `COSMOS_ENDPOINT` and `STORAGE_ACCOUNT_URL` (as before), plus `METRICS_ENABLED` and
+  `TACTICS_ENABLED` (both `0` unless set; `scripts/deploy_engine.sh` passes both).
 - **Snapshots:** metrics state is saved in Blob `checkpoints/metrics/{match_id}.json`, apart
   from the merge stage's `checkpoints/engine/`.
 - **Volume:** about 5 messages/s per match on `stats` (`positions` about 5 KB each, heatmaps
@@ -171,16 +178,15 @@ az cosmosdb sql role assignment create -g $RG --account-name $COSMOS \
 
 - **Contract:** metrics consumes the proposed `contracts/ingestion` v1.0.0 as is. Performance
   Metrics agrees to it.
-- **`engine/service.py`** (your async version) now builds `MetricsRouter` and passes it as
-  `EngineCore(router=…)`.
-  - Metrics runs inside `core.handle`, in your worker thread, so its sends block like your Cosmos
-    and Blob calls.
+- **`engine/service.py`** (your async version) builds `metrics_router(…)` and Prachit's
+  `tactics_router(…)`, and passes both through `fan_out(…)` as `EngineCore(router=…)`.
+  - Each router gets every merge output; an exception in one is logged and doesn't stop the other.
+  - Both run inside `core.handle`, in your worker thread, so their sends block like your Cosmos and
+    Blob calls.
   - Both checkpoint calls go through `checkpoint()`, which runs `core.checkpoint()` and then
-    `metrics.checkpoint()`.
-- **Deploying:** your deployed engine runs `main`, which has no metrics. If you deploy
-  `performance-metrics` before the `stats` hub and Cosmos `metrics` exist, add
-  `{"name": "METRICS_ENABLED", "value": "0"}` to the env list in `scripts/deploy_engine.sh`.
-  Otherwise every send fails and fills the logs.
+    `metrics.checkpoint()`. Tactics keeps no snapshot.
+- **Deploying:** metrics is off unless `METRICS_ENABLED=1`, the same way as `TACTICS_ENABLED`.
+  `scripts/deploy_engine.sh` passes it, default `0`.
 - **No change to `engine/core.py`.** `BlobSnapshots` in `engine/store_azure.py` gained a `prefix`
   argument (default `engine`, so merge-stage snapshots don't move). Metrics uses `metrics`, so the
   two can never overwrite each other.
@@ -196,11 +202,25 @@ az cosmosdb sql role assignment create -g $RG --account-name $COSMOS \
 - **Every shot needs `provider_xg` in feed A.** Metrics doesn't model xG (PM-13).
 - **The stand-in fixture (`tests/fixturegen`) teleports players** (`give()`) and changes speed
   instantly. Metrics treats any movement faster than 12 m/s as a jump in position, not running.
-  The truth test skips moments with acceleration a person can't produce. The real simulator caps
-  acceleration (LLD §4.3), so both guards should stop mattering.
+  The truth test skips moments with acceleration a person can't produce.
+- **Against the real simulator** (`sim/`, red-card storyline, 2 × 10 min, compared with
+  `true_player_stats`):
+
+  | Feed mess | Distance error (median / worst) | Top speed within 0.3 m/s | Sprints within 2 |
+  |---|---|---|---|
+  | `off` | −0.4% / −6.4% | 95% of players | 86% |
+  | `light` (feed B adds 10 cm position noise) | +5.3% / +13.3% | 73% | 36% |
+
+  With clean feeds the numbers mostly meet the LLD targets. With `light` mess, tracking noise
+  inflates distance and breaks up sprints. This is the open item for metrics; see below.
 - `answer-keys/` is read only by `tests/metrics/test_truth.py`, never by the live path.
 
 ## Decisions and open items
+
+- **Accuracy on noisy tracking (open).** On `light` mess, distance reads about 5% high and sprints
+  are undercounted. Likely fixes:
+  - accumulate distance from the 0.2 s speed, not frame-to-frame steps;
+  - add hysteresis to sprints, so a sprint continues above about 6.5 m/s once it started at 7.0.
 
 - **Speeds above 12 m/s** are tracking jumps. Smoothing and speed restart at a jump, and no
   distance is counted across it.

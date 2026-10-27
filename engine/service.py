@@ -1,9 +1,9 @@
 """Match engine service on Container Apps (LLD §9): reads `normalized`, runs the merge stage,
-stores Silver, runs Performance Metrics (to the `stats` hub and Cosmos `metrics`), and
+stores Silver, hands the merge output to Performance Metrics and Tactical Intelligence, and
 checkpoints so a restart resumes without loss (FR-27).
 
-METRICS_ENABLED=0 runs the merge stage alone (e.g. before the `stats` hub and the Cosmos
-`metrics` container exist; see engine/metrics/README.md).
+METRICS_ENABLED=1 and TACTICS_ENABLED=1 switch the two on (both off by default, so the engine
+runs the same as before without their hubs and containers).
 
 Signs in as the user-assigned identity id-engine (AZURE_CLIENT_ID); no keys.
 
@@ -24,6 +24,7 @@ from azure.identity.aio import ManagedIdentityCredential as AsyncManagedIdentity
 from azure.storage.blob import BlobServiceClient
 
 from engine.core import EngineCore
+from engine.merge.outputs import MergeOutput
 from engine.metrics.publisher import Publisher
 from engine.metrics.service import MetricsRouter
 from engine.metrics.sinks_azure import CosmosMetricsSink, StatsHubSink
@@ -61,6 +62,52 @@ def _props(event) -> dict:
             for k, v in (event.properties or {}).items()}
 
 
+def tactics_router(cred, cosmos):
+    """Tactical Intelligence on the router hook, publishing to the `stats` and `triggers` hubs.
+    Off unless TACTICS_ENABLED=1, so the engine runs the same as before without those hubs."""
+    if os.environ.get("TACTICS_ENABLED") != "1":
+        return None
+    from azure.core.exceptions import ResourceNotFoundError
+
+    from engine.tactics.router import EventHubPublisher, TacticsRouter
+
+    def prematch(match_id: str) -> dict | None:
+        try:
+            return cosmos.read_item("prematch", partition_key=match_id)["prematch"]
+        except ResourceNotFoundError:
+            return None
+
+    publisher = EventHubPublisher(os.environ["EVENTHUB_NAMESPACE"], cred)
+    log.info("tactical intelligence on: publishing to stats and triggers")
+    return TacticsRouter(publisher, prematch)
+
+
+def metrics_router(cred, db, checkpoints) -> MetricsRouter | None:
+    """Performance Metrics on the router hook: stats and number-only cues to the `stats` hub,
+    snapshots to Cosmos `metrics`. Off unless METRICS_ENABLED=1 (needs the `metrics` container
+    and the engine's Cosmos role on it; see engine/metrics/README.md)."""
+    if os.environ.get("METRICS_ENABLED") != "1":
+        return None
+    stats_hub = EventHubProducerClient(
+        fully_qualified_namespace=os.environ["EVENTHUB_NAMESPACE"], eventhub_name="stats",
+        credential=cred)
+    log.info("performance metrics on: publishing to stats and Cosmos metrics")
+    return MetricsRouter(
+        Publisher([StatsHubSink(stats_hub), CosmosMetricsSink(db.get_container_client("metrics"))]),
+        BlobSnapshots(checkpoints, prefix="metrics"))
+
+
+def fan_out(routers: list):
+    """One router hook for several domains; a failure in one doesn't stop the others."""
+    def route(outputs: list[MergeOutput]) -> None:
+        for r in routers:
+            try:
+                r(outputs)
+            except Exception:
+                log.exception("%s failed", type(r).__name__)
+    return route
+
+
 async def run() -> None:
     client_id = os.environ["AZURE_CLIENT_ID"]
     cred = ManagedIdentityCredential(client_id=client_id)
@@ -70,19 +117,13 @@ async def run() -> None:
     cosmos = db.get_container_client("events")
     frames = blobs.get_container_client("silver-frames")
     checkpoints = blobs.get_container_client("checkpoints")
-    # Performance Metrics runs inside core.handle (the worker thread), so its sends block like
-    # the Cosmos and Blob calls do
-    metrics = None
-    if os.environ.get("METRICS_ENABLED", "1") != "0":
-        stats_hub = EventHubProducerClient(
-            fully_qualified_namespace=os.environ["EVENTHUB_NAMESPACE"], eventhub_name="stats",
-            credential=cred)
-        metrics = MetricsRouter(
-            Publisher([StatsHubSink(stats_hub),
-                       CosmosMetricsSink(db.get_container_client("metrics"))]),
-            BlobSnapshots(checkpoints, prefix="metrics"))
+    # Both run inside core.handle (the worker thread), so their sends block like the Cosmos and
+    # Blob calls do
+    metrics = metrics_router(cred, db, checkpoints)
+    routers = [r for r in (metrics, tactics_router(cred, cosmos)) if r]
     core = EngineCore(lambda match_id: AzureStore(match_id, cosmos, frames),
-                      BlobSnapshots(checkpoints), **({"router": metrics} if metrics else {}))
+                      BlobSnapshots(checkpoints),
+                      **({"router": fan_out(routers)} if routers else {}))
 
     def checkpoint() -> None:
         core.checkpoint()

@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.1.0`**
+**Doc set version: `v2.5.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -36,19 +36,62 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 
 ## Log
 
-## v2.1.0 · 2026-10-26 · Archit
-**Files:** CLAUDE.md, VERSION.md
+## v2.5.0 · 2026-10-27 · Archit
+**Files:** CLAUDE.md, VERSION.md (code: `engine/metrics/`, `engine/service.py`, `engine/store_azure.py`, `scripts/deploy_engine.sh`)
 **Type:** MINOR
 - Performance Metrics is built on branch `performance-metrics` (on top of the Data Ingestion work): every Must in its design plus completion vs expected and heatmaps; pressure seconds and fatigue are not built. Local mode, the Azure path (`stats` hub, Cosmos `metrics`, wired into `engine/service.py`), and truth, delay, restart and Azure-path tests.
-- Merged `main` (Data Ingestion v2.0.0): metrics plugs into the async engine in `engine/service.py` and consumes the proposed `contracts/ingestion` v1.0.0 as is, so Performance Metrics agrees to it.
+- Merged `main` up to v2.4.0. Metrics consumes the proposed `contracts/ingestion` v1.0.0 as is, so Performance Metrics agrees to it.
+- `engine/service.py` combines the two router hooks: Performance Metrics (`METRICS_ENABLED=1`) and Tactical Intelligence (`TACTICS_ENABLED=1`) both get every merge output, and a failure in one doesn't stop the other. Both are off by default; `scripts/deploy_engine.sh` passes `METRICS_ENABLED` like `TACTICS_ENABLED`.
+- Metrics shares the `stats` hub with Tactical Intelligence. The kinds don't overlap (metrics: `positions`, `player_totals`, `heatmap`, `pass`, `shot`, `xg`; tactics: `window`, `series`, `territory`, `note`). Metrics messages also carry the property `type` (`stats` or `cue`).
+- Tactical Intelligence computes its own pressing and pitch value from frames and events, so `PressureSample` and `PassValues` currently have no listener. They stay available.
 - CLAUDE.md gains a "Lane 1: Performance Metrics" section. Message shapes and per-teammate notes are in `engine/metrics/README.md`; they are not yet in `contracts/`.
 - Decisions beyond the design: movement over 12 m/s is a tracking jump, not running; the best-option arrow shows below a 0.4 decision score; raw positions travel on `stats` as `positions`; number-only cues travel on `stats` with property `type=cue`.
 - **Action required:**
-  - Tactical Intelligence: confirm or change `PressureSample` / `PassValues` (direct call) before building on them.
+  - Tactical Intelligence: nothing required; `PressureSample` / `PassValues` are there if you want metrics' carrier pressure instead of your own.
   - Insight Generation: the Stats API reads Cosmos `metrics` (totals are cumulative; keep the highest event version).
   - Broadcast / Audience: consume `stats` by the `type` and `kind` properties; the shapes are in the README.
-  - Platform / Data Ingestion: beyond `azure-setup.sh`, create the `stats` hub, its consumer groups and Cosmos `metrics`, and grant `id-engine` Data Sender on `stats` and the Cosmos role on `metrics` (commands in the README; nothing has been created). Until then run the engine with `METRICS_ENABLED=0`.
+  - Platform / Data Ingestion: the `stats` hub and `id-engine`'s Data Sender on it now exist (v2.4.0). Still needed before `METRICS_ENABLED=1`: Cosmos container `metrics` (partition `/match_id`) and `id-engine`'s Cosmos role on it. Optional: consumer group `cues` on `stats` for the cue manager. Commands in the README; nothing has been created.
   - Match Simulation: send `provider_xg` on every shot.
+
+## v2.4.0 · 2026-10-27 · Prachit
+**Files:** CLAUDE.md, VERSION.md (code: `engine/tactics/`, `engine/service.py`, `scripts/deploy_engine.sh`)
+**Type:** MINOR
+- Tactical Intelligence runs on the live engine when `TACTICS_ENABLED=1`: it plugs into the engine's router hook and publishes windows, series, territory and notes to the new `stats` hub and triggers to the new `triggers` hub (partition key `match_id`). If a restart missed the pre-match info it reads it from Cosmos.
+- New Azure resources: hubs `stats` (consumer groups `bridge`, `fabric`) and `triggers` (`agents`, `fabric`), 2 partitions, 24 h retention; `id-engine` has Event Hubs Data Sender on both.
+- Tuned defaults (scored on six storylines against the answer key): pressing must change 50% and by 1.5 presses/min; a change is confirmed after 5 minutes (tentative still at 2). Keeps every catch the old settings had; false alarms down about a third on Red Card and half on Switch.
+- **Action required:** Lane 2 reads triggers from `triggers` with consumer group `agents`. Lane 3 reads `stats` with consumer group `bridge`. The Performance Metrics branch will conflict in `engine/service.py` (both use the router hook); combine the two routers there.
+
+## v2.3.0 · 2026-10-27 · Prachit
+**Files:** CLAUDE.md, VERSION.md (code: `engine/tactics/`, `tests/tactics/`)
+**Type:** MINOR
+- Tactical Intelligence built (local mode). Every 10 s of match time, each team's last 5 minutes: line height, offside traps, compactness, formation in and out of possession, pressing (per minute, size, triggers, PPDA), recovery time, style dial, control vs. chaos, tempo, passing network, chance routes, player positions; territory heatmaps every 60 s; chart series every window.
+- Change detector with tentative (2 min) and confirmed (4 min) notes, anchored to the level before the change; promoter; trigger maker (goals, cards, subs, conditions, long stoppages, 85', check-ins at 15/30/45/60/75/90, confirm due 4 min after a crux with did-it-work); tunable trigger buffer with summaries; answer-key scoring.
+- Red-card storyline: catches the half-time switch to a back three, Riverside dropping deeper when leading, and Northgate's line dropping ~8–12 m after the 70' red card (confirm due at 74'). Switch storyline: 4 of 4. Press Fade: 2 of 9, and false alarms are still high (teams also react without a scripted change); thresholds need tuning.
+- Deviations from the TI LLD: settings are JSON, not YAML; possession is inferred from on-ball events (frames carry none); the "normal style" baseline is the team's own 5–15 minute play in this match, not club history, because measured and scripted scales differ; triggers also carry `reason` and `play_ms`.
+- Not yet: Azure sinks (`stats`, `triggers` hubs) and wiring into the deployed engine's router.
+- **Action required:** Lane 2 can build agents against `local_out/<match>/tactics/triggers.jsonl` now. Lane 3 can draw windows, series and territory from the same folder.
+
+## v2.2.1 · 2026-10-27 · Prachit
+**Files:** CLAUDE.md, VERSION.md (code: `scripts/deploy_sim.sh`)
+**Type:** PATCH
+- Match control is live at https://offball-sim.whitemoss-2f18829c.westus2.azurecontainerapps.io (Container App `offball-sim`, identity `id-sim` with Event Hubs Data Sender on `raw-events` and `raw-tracking`, AcrPull on the registry). No passcode.
+- `deploy_sim.sh` fixes: turns off Git Bash path rewriting (it silently broke the role grants on Windows) and stamps each deploy so Azure always starts a new revision.
+
+## v2.2.0 · 2026-10-26 · Prachit
+**Files:** CLAUDE.md, VERSION.md (code: `sim/control/`, `Dockerfile.sim`, `scripts/deploy_sim.sh`, `tests/sim/test_control.py`, pyproject.toml)
+**Type:** MINOR
+- Match control: a web page with a Play button that generates (or reuses) a match and streams both feeds into the raw hubs, with live status (preparing, live, half-time, full time; match minute; messages sent) and Stop. One match at a time; optional passcode (`CONTROL_PASSCODE`). This is the Platform design's "run live" button.
+- Hosting: Container App `offball-sim` in `offball-env`, external ingress, one warm replica, managed identity `id-sim` (Event Hubs Data Sender on `raw-events` and `raw-tracking` only). `scripts/deploy_sim.sh` creates the identity and roles if missing.
+- **Action required:** someone with `az login` on `offball-rg` runs `scripts/deploy_sim.sh` (it creates `id-sim` and the Container App). Lane 3 can link to the page as a separate tab.
+
+## v2.1.0 · 2026-10-26 · Prachit
+**Files:** CLAUDE.md, VERSION.md (code: `sim/`, `tests/sim/`, pyproject.toml)
+**Type:** MINOR
+- Match Simulation built in `sim/`: three fictional clubs with managers (identity, reaction style, risk) and generated squads with abilities and careers; tactics in three layers (identity → match plan → live) that players actually play (line height, offside trap, pressing, compactness, style, tempo, formation); reactions to red cards, leading late and trailing late; six storylines (`red_card`, `comeback`, `switch`, `late_drama`, `press_fade`, `storm`) plus `random --seed N`, which invents a different match story for every seed; answer key with every tactic change and true player stats. CLAUDE.md gains a "Lane 1: Match Simulation" section with the commands.
+- Feeds reuse `tests/fixturegen/` writers, mess rules and streamer, so they follow ingestion §13. Checked: ingestion recovers ≥ 99% of events with no dead letters and aligns the clock within 80 ms.
+- Realism on the red-card match: ~10 km per outfield player, top speed ~9 m/s, ~30 sprints, 550–700 passes per team at 80–86%, 8–15 shots; Northgate's line drops ~12 m after the 70' red card.
+- Deviations from the simulation LLD: no offside events (ingestion has no offside type; the trap still shows in positions); foul and card reasons are sent as feed A qualifiers 301–315, which ingestion currently ignores; storylines with scripted goals get exactly those goals (no natural ones), and storylines with a scripted red card have no random red cards, so scripted scores hold; frames_truth.npz adds possession per frame.
+- **Action required:** Data Ingestion maps qualifiers 301–315 to clean `qualifiers` if the Fair Play/referee explanations are wanted. Lanes 2 and 3 can generate matches locally with `python -m sim generate`.
 
 ## v2.0.0 · 2026-10-26 · Kanika
 **Files:** contracts/README.md (new), contracts/ingestion/*.schema.json (new), CLAUDE.md, VERSION.md
