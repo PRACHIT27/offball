@@ -125,6 +125,9 @@ def build(trigger: dict, data: MatchData) -> dict:
         f["state"] = _team_state(after)
     if trigger["type"] in ("check_in", "external") and team is None and after:
         f["teams"] = {t: _team_state(v) for t, v in after.items() if isinstance(v, dict)}
+        if ev.get("previous"):  # the last check-in, so "pressing rose" can be checked
+            f["previous"] = {t: _team_state(v) for t, v in ev["previous"].items()
+                             if isinstance(v, dict)}
 
     dw = ev.get("did_it_work")
     if dw:

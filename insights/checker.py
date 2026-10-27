@@ -99,6 +99,7 @@ class Grounding:
         # Percent shares stored as 0.58 may be written as 58%
         self.numbers |= {round(v * 100, 1) for v in self.numbers if 0 < v < 1}
         self.facts = facts
+        self.tool_results = tool_results or []
 
     def has(self, n: float, unit: str) -> bool:
         tol = 0.5 if unit == "m" else 1.0 if unit == "%" else 0.05
@@ -147,18 +148,37 @@ def check_numbers(text: str, lang: str, g: Grounding) -> list[str]:
     return reasons
 
 
-def _directions(facts: dict) -> set[tuple[str, str]]:
+def _sign(measure: str, diff) -> set[tuple[str, str]]:
+    if not isinstance(diff, (int, float)) or diff == 0:
+        return set()
+    return {(measure, "up" if diff > 0 else "down")}
+
+
+def _directions(facts: dict, tool_results: list | None = None) -> set[tuple[str, str]]:
+    """Every direction the evidence shows: the trigger's change, a check-in against the previous
+    one, and compare_periods differences from this run's tool calls."""
     changes = list(facts.get("changes") or [])
     if facts.get("change"):
         changes.append(facts["change"])
-    return {(c["measure"], c.get("direction")) for c in changes if c.get("direction")}
+    have = {(c["measure"], c.get("direction")) for c in changes if c.get("direction")}
+    for team, now in (facts.get("teams") or {}).items():
+        before = (facts.get("previous") or {}).get(team) or {}
+        for k in ("line_height_m", "pressing_per_min"):
+            if isinstance(now.get(k), (int, float)) and isinstance(before.get(k), (int, float)):
+                have |= _sign(k, now[k] - before[k])
+    for r in tool_results or []:
+        res = r.get("result")
+        if r.get("tool") == "compare_periods" and isinstance(res, dict):
+            for k, m in (res.get("measures") or {}).items():
+                have |= _sign(k, (m or {}).get("difference"))
+    return have
 
 
-def check_claims(text: str, facts: dict) -> list[str]:
+def check_claims(text: str, facts: dict, tool_results: list | None = None) -> list[str]:
     # An expect caption predicts; the claim is checked later at confirm-due time
     if facts.get("kind") in ("expect",):
         return []
-    have = _directions(facts)
+    have = _directions(facts, tool_results)
     reasons = []
     for (measure, direction), pattern in CLAIMS.items():
         if re.search(pattern, text, re.IGNORECASE) and (measure, direction) not in have:
@@ -186,7 +206,8 @@ def check_pairs(text: str) -> list[str]:
 
 def check_caption(key: str, text: str, g: Grounding) -> list[str]:
     viewer, lang = key.rsplit(".", 1)
-    reasons = check_numbers(text, lang, g) + check_claims(text, g.facts) + check_pairs(text)
+    reasons = (check_numbers(text, lang, g) + check_claims(text, g.facts, g.tool_results)
+               + check_pairs(text))
     if g.facts.get("kind") == "expect" and EXPECT_TARGET.search(text):
         reasons.append("an expect caption gives today's level ('line now 33.8 m'), "
                        "not a target ('drop to 33.8 m')")

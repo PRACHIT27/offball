@@ -114,3 +114,15 @@ def test_ids_add_no_numbers_but_unit_names_do(data):
     g = checker.Grounding({**f, "evidence": {"window_ids": ["w-NGU-2-5030-5530"]}})
     assert not g.has(5030, "")
     assert checker.Grounding({"did_it_work": {"xg_per_10_minutes": [0.1, 0.0]}}).has(10, "")
+
+
+def test_tool_results_and_check_ins_ground_claims(data):
+    f = _red_card_confirmed(data)
+    claim = "Northgate are pressing more now."
+    assert not _check(claim, f).passed
+    tools = [{"tool": "compare_periods",
+              "result": {"measures": {"pressing_per_min": {"a": 2.0, "b": 3.5, "difference": 1.5}}}}]
+    assert _check(claim, f, tools=tools).passed
+    check_in = {"kind": "check_in", "teams": {"NGU": {"pressing_per_min": 3.5}},
+                "previous": {"NGU": {"pressing_per_min": 2.0}}}
+    assert checker.check({"analyst.en": claim}, check_in).passed

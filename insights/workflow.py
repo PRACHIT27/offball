@@ -123,6 +123,7 @@ async def _agents(team: Team, f: dict, p: dict, run: RunContext, out: _Progress)
     insight = out.core or templates.core_text(f)
     out.captions = {k: v for k, v in (await _story(team, f, insight, findings)).items()
                     if k in KEYS and isinstance(v, str)}
+    reviewed: dict[str, list[str]] = {}  # safety verdict per caption text: rewrites re-check only changes
     for attempt in range(MAX_REWRITES + 1):
         out.attempts = attempt + 1
         g = checker.Grounding(f, run.tool_results)
@@ -131,13 +132,17 @@ async def _agents(team: Team, f: dict, p: dict, run: RunContext, out: _Progress)
         failed = {k: v for k, v in failed.items() if v}
         if team.safety:
             clean = {k: out.captions[k] for k in KEYS if k not in failed}
+            new = {k: t for k, t in clean.items() if t not in reviewed}
             try:
-                for k, v in (await team.safety.review(clean, g)).items():
-                    if v:
-                        failed[k] = v
+                if new:
+                    for k, v in (await team.safety.review(new, g)).items():
+                        reviewed[new[k]] = v
+                for k, t in clean.items():
+                    if reviewed.get(t):
+                        failed[k] = reviewed[t]
             except Exception as e:  # unverified captions never go on air
                 failed.update({k: [f"safety check unavailable: {type(e).__name__}"]
-                               for k in clean})
+                               for k in clean if clean[k] not in reviewed})
         out.passed = set(KEYS) - set(failed)
         if not failed or attempt == MAX_REWRITES:
             out.reasons += [f"{k}: {'; '.join(v)}" for k, v in failed.items()]

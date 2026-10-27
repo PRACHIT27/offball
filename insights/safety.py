@@ -52,9 +52,9 @@ class Safety:
                                                *(self.harmful(t) for t in captions.values()))
         reasons = dict(zip(captions, flags))
         for key, text in english.items():
-            viewer = key.rsplit(".", 1)[0]
             # Same rules as English; no word limit, a translation's length says nothing
-            found = (checker.check_numbers(text, "en", g) + checker.check_claims(text, g.facts)
+            found = (checker.check_numbers(text, "en", g)
+                     + checker.check_claims(text, g.facts, g.tool_results)
                      + checker.check_pairs(text))
             reasons[key] += [f"back-translation ({text!r}): {r}" for r in found]
         return reasons

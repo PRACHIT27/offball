@@ -21,13 +21,18 @@ mcp = MCPServer("offball-stats", instructions=(
     "half starts at 45). Teams are club IDs or names. Every answer lists the window or event "
     "IDs it came from."))
 _api: StatsAPI | None = None
+_loaded_at = 0.0
 
 
 def api() -> StatsAPI:
-    global _api
-    if _api is None:
-        folder = Path(os.environ.get("OFFBALL_MATCH_DATA", "local_out/m001/insights/data"))
-        _api = StatsAPI(MatchData.load(folder, os.environ.get("OFFBALL_MATCH", folder.parent.parent.name)))
+    """The match data, reloaded whenever the live service writes a newer snapshot."""
+    global _api, _loaded_at
+    folder = Path(os.environ.get("OFFBALL_MATCH_DATA", "local_out/m001/insights/data"))
+    changed = max((p.stat().st_mtime for p in folder.glob("*")), default=0.0)
+    if _api is None or changed > _loaded_at:
+        _api = StatsAPI(MatchData.load(folder, os.environ.get("OFFBALL_MATCH",
+                                                              folder.parent.parent.name)))
+        _loaded_at = changed
     return _api
 
 
