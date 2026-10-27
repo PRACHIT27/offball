@@ -1,5 +1,5 @@
 import { clockLabel, scoreAt } from "../replay";
-import type { MatchListing, Replay, ViewerType } from "../types";
+import type { Language, MatchListing, Replay, ViewerType } from "../types";
 import { TEAM_COLOUR } from "./Pitch";
 
 interface Props {
@@ -11,10 +11,12 @@ interface Props {
   playing: boolean;
   speed: number;
   viewer: ViewerType;
+  lang: Language;
   onMatch: (id: string) => void;
   onPlay: () => void;
   onSpeed: (s: number) => void;
   onViewer: (v: ViewerType) => void;
+  onLang: (l: Language) => void;
   onNextMoment: () => void;
 }
 
@@ -40,6 +42,11 @@ export function TopBar(p: Props) {
         <div className="seg" role="group" aria-label="Viewer type">
           {(["casual", "analyst"] as const).map((v) => (
             <button key={v} className={p.viewer === v ? "on" : ""} onClick={() => p.onViewer(v)}>{v}</button>
+          ))}
+        </div>
+        <div className="seg lang" role="group" aria-label="Caption language">
+          {(["en", "es", "hi"] as const).map((l) => (
+            <button key={l} className={p.lang === l ? "on" : ""} onClick={() => p.onLang(l)}>{l}</button>
           ))}
         </div>
         <button className="play" onClick={p.onPlay} aria-label={p.playing ? "Pause" : "Play"}>

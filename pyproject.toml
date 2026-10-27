@@ -27,7 +27,7 @@ azure = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["ingest*", "engine*", "sim*"]
+include = ["ingest*", "engine*", "sim*", "insights*", "mcp_stats*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.5.0`**
+**Doc set version: `v2.6.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,15 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.6.0 · 2026-10-27 · Kanika
+**Files:** CLAUDE.md, VERSION.md (code: `insights/`, `tests/insights/`, `web/src/`, `web/public/replays/m001.json`, pyproject.toml)
+**Type:** MINOR
+- Insight Generation started (Kanika owns it). Step 1: an insight per trigger with 12 template captions (4 viewer types × en, es, hi), written only from the trigger's facts (IG-3, IG-22, IG-25, IG-31). Kinds: expect (crux), confirmed / retracted (confirm due, using Tactical Intelligence's change thresholds), shift, summary, check-in, external.
+- The viewer screen shows insight captions for the chosen viewer type, and gains an EN / ES / HI switch. Captions are marked `AI` (agent) or `auto` (template). Insight captions replace the screen's own shift captions for the same trigger. `m001.json` carries the insights.
+- New Azure: AI Services `offball-ai-kr2610` (Sweden Central, keys off) with `gpt-5-mini`; details in CLAUDE.md.
+- `tests/engine/test_local_mode.py` now also guards `insights/` against reading the answer key. That test already failed on `main` because `engine/tactics/local.py` has `--answer-key`.
+- **Action required:** Tactical Intelligence moves answer-key scoring out of `engine/tactics/local.py` (for example into `tests/`) or narrows the guard. Lane 3: `scripts/build_replay.py` rewrites a replay without insights; run `python -m insights.local … --replay` after it.
 
 ## v2.5.0 · 2026-10-27 · Archit
 **Files:** CLAUDE.md, VERSION.md (code: `engine/metrics/`, `engine/service.py`, `engine/store_azure.py`, `scripts/deploy_engine.sh`)

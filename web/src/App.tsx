@@ -5,7 +5,7 @@ import { SidePanel } from "./components/SidePanel";
 import { moments, Timeline } from "./components/Timeline";
 import { TopBar } from "./components/TopBar";
 import { snapshotAt } from "./replay";
-import type { MatchListing, Replay, ViewerType } from "./types";
+import type { Language, MatchListing, Replay, ViewerType } from "./types";
 
 const BASE = `${import.meta.env.BASE_URL}replays/`;
 
@@ -37,6 +37,8 @@ export default function App() {
   const [speed, setSpeed] = useState(1);
   const [viewer, setViewer] = useState<ViewerType>(
     (params.get("type") as ViewerType) || load<ViewerType>("offball.viewer", "casual"));
+  const [lang, setLang] = useState<Language>(
+    (params.get("lang") as Language) || load<Language>("offball.lang", "en"));
   const [focus, setFocus] = useState<string | null>(null);
   const tRef = useRef(0);
 
@@ -61,6 +63,7 @@ export default function App() {
   }, [matchId]);
 
   useEffect(() => save("offball.viewer", viewer), [viewer]);
+  useEffect(() => save("offball.lang", lang), [lang]);
 
   // Match clock: advances at the viewer's speed, one React render per animation frame
   useEffect(() => {
@@ -108,13 +111,13 @@ export default function App() {
     <div className={`app viewer-${viewer}`}>
       <TopBar replay={replay} matches={matches} t={t} period={snap?.period ?? 1}
               clock={snap?.clock ?? 0} playing={playing} speed={speed} viewer={viewer}
-              onMatch={(id) => setMatchId(id)} onPlay={() => setPlaying((p) => !p)}
-              onSpeed={setSpeed} onViewer={setViewer} onNextMoment={next} />
+              lang={lang} onMatch={(id) => setMatchId(id)} onPlay={() => setPlaying((p) => !p)}
+              onSpeed={setSpeed} onViewer={setViewer} onLang={setLang} onNextMoment={next} />
       <main className="stage">
         <div className="pitch-wrap">
           <Pitch replay={replay} t={t} viewer={viewer} focus={focus}
                  onPickPlayer={(pid) => setFocus((f) => (f === pid ? null : pid))} />
-          <CaptionBar replay={replay} t={t} />
+          <CaptionBar replay={replay} t={t} viewer={viewer} lang={lang} />
         </div>
         {(viewer === "analyst" || focus) && <SidePanel replay={replay} t={t} focus={focus} />}
       </main>
