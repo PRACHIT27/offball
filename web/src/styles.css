@@ -152,3 +152,15 @@ button, select { font: inherit; color: inherit; }
 .four-tile .caption-text { font-size: 14px; }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
 @media (max-width: 860px) { .four-ways { grid-template-columns: 1fr; } .four-tile .pitch { max-height: none; } }
+
+/* Tactical Intelligence panels */
+.mini { width: 100%; display: block; }
+.mini-label { font-family: var(--mono); font-size: 4.2px; font-weight: 600; }
+.mini-num { font-family: var(--display); font-size: 3px; font-weight: 700; fill: #13201a; pointer-events: none; }
+.board-pitches { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0; }
+.board-label { font-family: var(--display); font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.board .stat-table td { font-size: 12px; }
+.meter { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); padding: 2px 4px; }
+.meter-bar { position: relative; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #5fbf8a, #e8a24f, #e5484d); }
+.meter-bar i { position: absolute; top: -3px; width: 4px; height: 14px; margin-left: -2px; background: var(--text); border-radius: 2px; }
+.meter b { font-family: var(--mono); color: var(--text); font-weight: 500; }
