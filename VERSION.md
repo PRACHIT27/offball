@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.2.0`**
+**Doc set version: `v2.2.1`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,12 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.2.1 · 2026-10-27 · Prachit
+**Files:** CLAUDE.md, VERSION.md (code: `scripts/deploy_sim.sh`)
+**Type:** PATCH
+- Match control is live at https://offball-sim.whitemoss-2f18829c.westus2.azurecontainerapps.io (Container App `offball-sim`, identity `id-sim` with Event Hubs Data Sender on `raw-events` and `raw-tracking`, AcrPull on the registry). No passcode.
+- `deploy_sim.sh` fixes: turns off Git Bash path rewriting (it silently broke the role grants on Windows) and stamps each deploy so Azure always starts a new revision.
 
 ## v2.2.0 · 2026-10-26 · Prachit
 **Files:** CLAUDE.md, VERSION.md (code: `sim/control/`, `Dockerfile.sim`, `scripts/deploy_sim.sh`, `tests/sim/test_control.py`, pyproject.toml)
