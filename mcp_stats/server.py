@@ -52,7 +52,9 @@ def get_pressing(team: str, from_minute: float, to_minute: float,
 @mcp.tool()
 def get_style(team: str, from_minute: float, to_minute: float,
               as_of_period: int = 2, as_of_clock_ms: int = 10_000_000) -> dict:
-    """Style dial (0 direct – 100 patient), tempo, pass length, long-ball share, control vs chaos."""
+    """Style dial (0 = patient short passing, 100 = direct long balls), tempo (events per
+    minute), average pass length, long-ball share, control share (share of time on the ball,
+    0–1) and chaos (0 calm – 100 frantic: turnovers, short possessions, unstable shape)."""
     return api().style(team, from_minute, to_minute, _as_of(as_of_period, as_of_clock_ms))
 
 

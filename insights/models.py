@@ -12,6 +12,8 @@ class Checker(BaseModel):
     attempts: int = 0
     passed: bool = True
     reasons: list[str] = []
+    # Captions that fell back to their template (deadline, error or second rejection)
+    template_keys: list[str] = []
 
 
 class Insight(BaseModel):
@@ -30,3 +32,4 @@ class Insight(BaseModel):
     caption_source: Literal["agent", "template"]
     checker: Checker = Checker()
     latency_ms: int = 0
+    tool_calls: list[str] = []

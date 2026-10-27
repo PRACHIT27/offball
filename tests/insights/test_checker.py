@@ -75,3 +75,35 @@ def test_word_limit(data):
     f = _red_card_confirmed(data)
     long = "Northgate dropped deeper " + "and kept going " * 6
     assert not _check(long, f, "casual.en").passed
+
+
+def test_shares_are_not_percentages(data):
+    f = _red_card_confirmed(data)  # control_share 0.5
+    assert _check("Control share is 50%.", f).passed
+    assert not _check("Control share is 0.5%.", f).passed
+
+
+def test_coordinates_are_rejected(data):
+    f = _red_card_confirmed(data)
+    r = _check("The winger moved to (52.4, 13.2).", f)
+    assert not r.passed and "coordinates" in r.reasons[0]
+
+
+def test_direction_words_must_match_the_arrow(data):
+    f = _red_card_confirmed(data)
+    assert _check("Northgate dropped their line 33.8 m → 25.9 m.", f).passed
+    r = _check("Northgate raised their line 33.8 m → 25.9 m.", f)
+    assert not r.passed and "raised" in " ".join(r.reasons)
+    assert not _check("Northgate retrasa su línea de 25.9 m a 33.8 m.", f, "analyst.es").passed
+
+
+def test_jargon_is_rejected(data):
+    f = _red_card_confirmed(data)
+    assert not _check("Possession 51% → 58%, xG/10 up.", f).passed
+
+
+def test_expect_numbers_are_levels_not_targets(data):
+    f = facts.build(data.triggers[1], data)  # red card, line 33.8 m
+    assert _check("Red card. Expect Northgate to drop deeper (line now 33.8 m).", f).passed
+    assert not _check("Expect Northgate to drop their line to 33.8 m.", f).passed
+    assert not _check("Northgate debería bajar su línea a 33.8 m.", f, "analyst.es").passed

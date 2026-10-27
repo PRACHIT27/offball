@@ -25,6 +25,7 @@ _HI = {"दो": 2, "तीन": 3, "चार": 4, "पांच": 5, "पा�
 _DEVANAGARI_DIGITS = str.maketrans("०१२३४५६७८९", "0123456789")
 
 FORMATION = re.compile(r"\b\d(?:-\d){2,3}\b")
+COORDINATES = re.compile(r"\(\s*\d+(?:\.\d+)?\s*,\s*\d+(?:\.\d+)?\s*\)")
 STOPPAGE_MINUTE = re.compile(r"\b(\d{2,3})\+(\d{1,2})'")
 NUMBER = re.compile(r"(?<![\w.])(\d+(?:[.,]\d+)?)(\s*(?:m\b|%|/min|°))?")
 
@@ -35,6 +36,19 @@ CLAIMS = {
     ("pressing_per_min", "up"): r"press(?:es|ing)? (?:more|harder)|more pressing|step(?:s|ped)? up the press|presiona más|más presión|ज़्यादा प्रेस",
     ("pressing_per_min", "down"): r"press(?:es|ing)? less|less pressing|stop(?:s|ped)? pressing|eas(?:e|es|ed) off|presiona menos|menos presión|कम प्रेस",
 }
+
+
+# A before → after pair must agree with the rise or fall word in the same clause
+PAIR = re.compile(r"(\d+(?:\.\d+)?)\s*(?:m|%|/min)?\s*(?:→|->|to|a|से)\s*(\d+(?:\.\d+)?)")
+DOWN_WORDS = (r"\b(?:drop\w*|fell|fall\w*|cut\w*|reduc\w*|lower\w*|deeper|down|decreas\w*|"
+              r"retreat\w*|bajó|baja\w*|cae|cayó|redu\w*|retras\w*)\b|पीछे|घट|कम")
+UP_WORDS = (r"\b(?:rose|rise\w*|rais\w*|up|increas\w*|higher|push\w*|climb\w*|subi\w*|"
+            r"sube|aument\w*|adelant\w*)\b|आगे|बढ़")
+# An expect caption predicts a direction; a number in it is today's level, never a target
+EXPECT_TARGET = re.compile(
+    r"\b(?:drop|cut|reduc|rais|rise|increas|push|lower|fall|shorten|bajar|baja|subir|sube|"
+    r"reducir|aumentar|adelantar|retrasar)\w*\s+(?:\S+\s+){0,5}?(?:to|a)\s+\d", re.IGNORECASE)
+JARGON = re.compile(r"xG\s*/\s*10|per\s?10\b(?!\s*min)|per period", re.IGNORECASE)
 
 
 @dataclass
@@ -83,7 +97,13 @@ class Grounding:
 
     def has(self, n: float, unit: str) -> bool:
         tol = 0.5 if unit == "m" else 1.0 if unit == "%" else 0.05
-        return any(abs(n - v) <= tol or (n == int(n) and round(v) == n) for v in self.numbers)
+        pool = self.numbers
+        if unit == "%":
+            # A share of 0.66 is 66%, never "0.66%"
+            pool = {v for v in self.numbers if v >= 1} | {v * 100 for v in self.numbers if 0 < v < 1}
+            if n < 1:  # ±1 would let "0.5%" match unrelated small numbers
+                tol = 0.05
+        return any(abs(n - v) <= tol or (n == int(n) and round(v) == n) for v in pool)
 
 
 def _word_numbers(text: str, lang: str) -> list[float]:
@@ -99,6 +119,9 @@ def _word_numbers(text: str, lang: str) -> list[float]:
 def check_numbers(text: str, lang: str, g: Grounding) -> list[str]:
     reasons = []
     text = text.translate(_DEVANAGARI_DIGITS)
+    if COORDINATES.search(text):
+        reasons.append("pitch coordinates are not for viewers; describe the position in words")
+        text = COORDINATES.sub(" ", text)
     for f in FORMATION.findall(text):
         if f not in g.formations:
             reasons.append(f"formation {f} is not in the evidence")
@@ -138,10 +161,34 @@ def check_claims(text: str, facts: dict) -> list[str]:
     return reasons
 
 
+def check_pairs(text: str) -> list[str]:
+    """In each clause, "A → B" or "from A to B" must not contradict its rise or fall word."""
+    reasons = []
+    for clause in re.split(r"[;,.।:—]\s|\s[-–]\s", text):
+        down = re.search(DOWN_WORDS, clause, re.IGNORECASE)
+        up = re.search(UP_WORDS, clause, re.IGNORECASE)
+        if bool(down) == bool(up):
+            continue
+        for a, b in PAIR.findall(clause):
+            a, b = float(a), float(b)
+            if down and b > a or up and b < a:
+                word = (down or up).group(0)
+                reasons.append(f"says '{word}' but {a:g} → {b:g} goes the other way")
+    return reasons
+
+
 def check_caption(key: str, text: str, g: Grounding) -> list[str]:
     viewer, lang = key.rsplit(".", 1)
-    reasons = check_numbers(text, lang, g) + check_claims(text, g.facts)
+    reasons = check_numbers(text, lang, g) + check_claims(text, g.facts) + check_pairs(text)
+    if g.facts.get("kind") == "expect" and EXPECT_TARGET.search(text):
+        reasons.append("an expect caption gives today's level ('line now 33.8 m'), "
+                       "not a target ('drop to 33.8 m')")
+    if JARGON.search(text):
+        reasons.append(f"abbreviation '{JARGON.search(text).group(0)}': say 'xG per 10 minutes'")
+    # Limits are written for English; Spanish runs about 20% longer, Hindi words don't compare
     limit = WORD_LIMIT.get(viewer)
+    if limit and lang == "es":
+        limit = round(limit * 1.2)
     if limit and lang != "hi" and len(text.split()) > limit:
         reasons.append(f"{len(text.split())} words, the limit for {viewer} is {limit}")
     return reasons

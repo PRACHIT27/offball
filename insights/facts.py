@@ -36,6 +36,12 @@ def _change(key: str, before, after) -> dict:
     return c
 
 
+def _event(e: dict, data: MatchData) -> dict:
+    return {"type": e["type"], "outcome": e["outcome"], "team": e["team_id"],
+            "team_name": data.club_name(e["team_id"]), "player": data.player_name(e["player_id"]),
+            "minute": minute_label(e["period"], e["match_clock_ms"])}
+
+
 def _team_state(values: dict) -> dict:
     return {k: values.get(k) for k in MEASURES if values.get(k) is not None}
 
@@ -71,10 +77,7 @@ def build(trigger: dict, data: MatchData) -> dict:
     events = [data.events[e] for e in ev.get("event_ids", []) if e in data.events]
     if trigger["type"] == "crux" and events:
         e = events[0]
-        f["event"] = {"type": e["type"], "outcome": e["outcome"], "team": e["team_id"],
-                      "team_name": data.club_name(e["team_id"]),
-                      "player": data.player_name(e["player_id"]),
-                      "minute": minute_label(e["period"], e["match_clock_ms"])}
+        f["event"] = _event(e, data)
         if e["type"] in ("sub_on", "sub_off"):
             pair = [x for x in data.active_events(as_of) if x["type"] in ("sub_on", "sub_off")
                     and x["team_id"] == e["team_id"]
@@ -114,6 +117,10 @@ def build(trigger: dict, data: MatchData) -> dict:
                           if t["trigger_id"] == ev.get("crux_trigger_id")), None)
         if crux_trig:
             f["crux_minute"] = minute_label(crux_trig["period"], crux_trig["at_ms"])
+            crux_events = [data.events[e] for e in crux_trig["evidence"].get("event_ids", [])
+                           if e in data.events]
+            if crux_events:  # who scored or was sent off, so nobody has to guess
+                f["crux_event"] = _event(crux_events[0], data)
     if trigger["type"] == "summary":
         f["state"] = _team_state(after)
     if trigger["type"] in ("check_in", "external") and team is None and after:
@@ -122,7 +129,7 @@ def build(trigger: dict, data: MatchData) -> dict:
     dw = ev.get("did_it_work")
     if dw:
         f["did_it_work"] = {
-            "xg_for_per10": [dw["before"].get("xg_for_per10"), dw["after"].get("xg_for_per10")],
+            "xg_per_10_minutes": [dw["before"].get("xg_for_per10"), dw["after"].get("xg_for_per10")],
             "possession_pct": [round(100 * dw["before"]["possession_share"]),
                                round(100 * dw["after"]["possession_share"])]
             if dw["before"].get("possession_share") is not None
