@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import time
+import traceback
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -51,6 +52,7 @@ class InsightService:
         self.gate = asyncio.Semaphore(CONCURRENCY)
         self.started = time.time()
         self.counts = {"windows": 0, "triggers": 0, "insights": 0, "errors": 0}
+        self.last_error: str | None = None
 
     def match(self, match_id: str) -> LiveMatch:
         if match_id not in self.matches:
@@ -130,7 +132,8 @@ class InsightService:
 
     async def health(self, request: web.Request) -> web.Response:
         return web.json_response({"up_s": round(time.time() - self.started), **self.counts,
-                                  "matches": sorted(self.matches)})
+                                  "matches": sorted(self.matches),
+                                  "last_error": self.last_error})
 
     async def list_matches(self, request: web.Request) -> web.Response:
         rows = []
@@ -166,24 +169,32 @@ async def main() -> None:
     for noisy in ("azure", "uamqp", "httpx", "mcp", "agent_framework"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
     namespace = os.environ["EVENTHUB_NAMESPACE"]
-    async with DefaultAzureCredential() as cred, \
-            CosmosClient(os.environ["COSMOS_ENDPOINT"], credential=cred) as cosmos:
-        container = cosmos.get_database_client("offball").get_container_client("events")
-        svc = InsightService(cred, container, namespace)
-        stats = EventHubConsumerClient(namespace, "insights", eventhub_name="stats",
-                                       credential=cred)
-        triggers = EventHubConsumerClient(namespace, "agents", eventhub_name="triggers",
-                                          credential=cred)
-        runner = web.AppRunner(svc.app())
-        await runner.setup()
-        await web.TCPSite(runner, "0.0.0.0", int(os.environ.get("PORT", "8080"))).start()
-        log.info("insights service up: stats lookback %s, triggers from now", STATS_LOOKBACK)
-        async with stats, triggers:
-            await asyncio.gather(
-                stats.receive(svc.on_stats, starting_position=datetime.now(timezone.utc)
-                              - STATS_LOOKBACK),
-                # Only new triggers: a restart must not re-explain (and re-bill) old ones
-                triggers.receive(svc.on_trigger, starting_position="@latest"))
+    cred = DefaultAzureCredential()
+    cosmos = CosmosClient(os.environ["COSMOS_ENDPOINT"], credential=cred)
+    container = cosmos.get_database_client("offball").get_container_client("events")
+    svc = InsightService(cred, container, namespace)
+    # The page and /health come up first, so a failing input shows its error instead of crashing
+    runner = web.AppRunner(svc.app())
+    await runner.setup()
+    await web.TCPSite(runner, "0.0.0.0", int(os.environ.get("PORT", "8080"))).start()
+    log.info("insights service up: stats lookback %s, triggers from now", STATS_LOOKBACK)
+    stats_from = datetime.now(timezone.utc) - STATS_LOOKBACK
+    while True:
+        try:
+            stats = EventHubConsumerClient(namespace, "insights", eventhub_name="stats",
+                                           credential=cred)
+            triggers = EventHubConsumerClient(namespace, "agents", eventhub_name="triggers",
+                                              credential=cred)
+            async with stats, triggers:
+                await asyncio.gather(
+                    stats.receive(svc.on_stats, starting_position=stats_from),
+                    # Only new triggers: a restart must not re-explain (and re-bill) old ones
+                    triggers.receive(svc.on_trigger, starting_position="@latest"))
+        except Exception as e:
+            svc.last_error = "".join(traceback.format_exception_only(e))[-1000:]
+            log.exception("hub readers stopped; retrying in 30 s")
+        stats_from = datetime.now(timezone.utc) - timedelta(minutes=10)
+        await asyncio.sleep(30)
 
 
 if __name__ == "__main__":
