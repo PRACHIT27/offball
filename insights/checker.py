@@ -24,6 +24,7 @@ _HI = {"दो": 2, "तीन": 3, "चार": 4, "पांच": 5, "पा�
        "अस्सी": 80, "नब्बे": 90, "सौ": 100}
 _DEVANAGARI_DIGITS = str.maketrans("०१२३४५६७८९", "0123456789")
 
+ID = re.compile(r"^[a-z]-[\w-]+$")
 FORMATION = re.compile(r"\b\d(?:-\d){2,3}\b")
 COORDINATES = re.compile(r"\(\s*\d+(?:\.\d+)?\s*,\s*\d+(?:\.\d+)?\s*\)")
 STOPPAGE_MINUTE = re.compile(r"\b(\d{2,3})\+(\d{1,2})'")
@@ -32,7 +33,7 @@ NUMBER = re.compile(r"(?<![\w.])(\d+(?:[.,]\d+)?)(\s*(?:m\b|%|/min|°))?")
 # Claims of change, per measure and direction (rule 4)
 CLAIMS = {
     ("line_height_m", "down"): r"drop(?:s|ped|ping)? (?:back|deeper)|deeper|sit(?:s|ting)? deeper|retreat|lower(?:ed)? (?:their |the )?line|retrasa|repliega|पीछे",
-    ("line_height_m", "up"): r"push(?:es|ed|ing)? (?:their |the )?line (?:up|higher)|higher line|line higher|adelanta|आगे",
+    ("line_height_m", "up"): r"push(?:es|ed|ing)? (?:their |the )?line (?:up|higher)|rais(?:e|es|ed|ing) (?:its |their |the )?line|higher line|line higher|adelanta|आगे",
     ("pressing_per_min", "up"): r"press(?:es|ing)? (?:more|harder)|more pressing|step(?:s|ped)? up the press|presiona más|más presión|ज़्यादा प्रेस",
     ("pressing_per_min", "down"): r"press(?:es|ing)? less|less pressing|stop(?:s|ped)? pressing|eas(?:e|es|ed) off|presiona menos|menos presión|कम प्रेस",
 }
@@ -63,6 +64,8 @@ def _numbers_in(obj, out: set[float], formations: set[str], minutes: set[str]) -
     if isinstance(obj, (int, float)):
         out.add(float(obj))
     elif isinstance(obj, str):
+        if ID.match(obj):  # w-NGU-2-5030-5530 holds no number a caption may use
+            return
         formations.update(FORMATION.findall(obj))
         minutes.update(f"{a}+{b}" for a, b in STOPPAGE_MINUTE.findall(obj))
         for n in re.findall(r"\d+(?:\.\d+)?", FORMATION.sub(" ", obj)):
@@ -72,7 +75,9 @@ def _numbers_in(obj, out: set[float], formations: set[str], minutes: set[str]) -
         if isinstance(b, (int, float)) and isinstance(a, (int, float)) and \
                 not isinstance(b, bool) and not isinstance(a, bool):
             out.add(round(abs(a - b), 2))  # "dropped 8 m" is a difference of two facts
-        for v in obj.values():
+        for k, v in obj.items():
+            # A unit in a fact's name is usable too: the 10 in xg_per_10_minutes
+            out.update(float(n) for n in re.findall(r"(?<=_)\d+(?=_)", str(k)))
             _numbers_in(v, out, formations, minutes)
     elif isinstance(obj, (list, tuple)):
         if len(obj) == 2 and all(isinstance(v, (int, float)) and not isinstance(v, bool)
@@ -103,7 +108,8 @@ class Grounding:
             pool = {v for v in self.numbers if v >= 1} | {v * 100 for v in self.numbers if 0 < v < 1}
             if n < 1:  # ±1 would let "0.5%" match unrelated small numbers
                 tol = 0.05
-        return any(abs(n - v) <= tol or (n == int(n) and round(v) == n) for v in pool)
+        # 1e-9: 8.15 rounds to "8.2", exactly 0.05 away, which float error would push past
+        return any(abs(n - v) <= tol + 1e-9 or (n == int(n) and round(v) == n) for v in pool)
 
 
 def _word_numbers(text: str, lang: str) -> list[float]:
@@ -164,7 +170,8 @@ def check_claims(text: str, facts: dict) -> list[str]:
 def check_pairs(text: str) -> list[str]:
     """In each clause, "A → B" or "from A to B" must not contradict its rise or fall word."""
     reasons = []
-    for clause in re.split(r"[;,.।:—]\s|\s[-–]\s", text):
+    # A colon joins a claim to its numbers ("dropped deeper: 33.8 m → 25.9 m"), so it doesn't split
+    for clause in re.split(r"[;,.।—]\s|\s[-–]\s", text):
         down = re.search(DOWN_WORDS, clause, re.IGNORECASE)
         up = re.search(UP_WORDS, clause, re.IGNORECASE)
         if bool(down) == bool(up):

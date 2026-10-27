@@ -107,3 +107,10 @@ def test_expect_numbers_are_levels_not_targets(data):
     assert _check("Red card. Expect Northgate to drop deeper (line now 33.8 m).", f).passed
     assert not _check("Expect Northgate to drop their line to 33.8 m.", f).passed
     assert not _check("Northgate debería bajar su línea a 33.8 m.", f, "analyst.es").passed
+
+
+def test_ids_add_no_numbers_but_unit_names_do(data):
+    f = _red_card_confirmed(data)
+    g = checker.Grounding({**f, "evidence": {"window_ids": ["w-NGU-2-5030-5530"]}})
+    assert not g.has(5030, "")
+    assert checker.Grounding({"did_it_work": {"xg_per_10_minutes": [0.1, 0.0]}}).has(10, "")

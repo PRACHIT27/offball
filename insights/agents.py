@@ -16,6 +16,8 @@ from pathlib import Path
 from agent_framework import Agent, FunctionInvocationContext, MCPStdioTool, function_middleware
 from agent_framework.openai import OpenAIChatClient
 
+from insights.safety import Safety
+
 PROMPTS = Path(__file__).parent / "prompts"
 ENDPOINT = os.environ.get("AZURE_AI_ENDPOINT", "https://offball-ai-kr2610.cognitiveservices.azure.com/")
 MODEL = os.environ.get("AZURE_AI_MODEL", "gpt-5-mini")
@@ -75,7 +77,8 @@ def prompt(name: str, **kw) -> str:
 class Team:
     """One chat client, the MCP servers and the agents, shared by every run of a match."""
 
-    def __init__(self, data_dir: Path, credential):
+    def __init__(self, data_dir: Path, credential, safety: bool = True):
+        self.safety = Safety(credential) if safety else None
         self.client = OpenAIChatClient(model=MODEL, azure_endpoint=ENDPOINT, credential=credential)
         env = {**os.environ, "OFFBALL_MATCH_DATA": str(data_dir)}
         server = [sys.executable, "-m", "mcp_stats.server"]
@@ -98,5 +101,7 @@ class Team:
         return self
 
     async def __aexit__(self, *exc):
+        if self.safety:
+            await self.safety.close()
         await self.explainer_mcp.__aexit__(*exc)
         await self.team_mcp.__aexit__(*exc)

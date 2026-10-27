@@ -198,7 +198,9 @@ Every number in a caption comes from the trigger's facts (`insights/facts.py`) o
 Agent team (`insights/agents.py`, `insights/workflow.py`, prompts in `insights/prompts/`): coordinator
 (code) → tactics agents (home, away, in parallel, MCP tools) → shift explainer → storyteller (one call
 per language, in parallel) → checker (`insights/checker.py`: numbers, units, direction words, expect
-targets, jargon, word limits) with up to 2 rewrites, then the template per caption. A middleware pins
+targets, jargon, word limits; then `insights/safety.py`: Translator back-check of es/hi and Content
+Safety) with up to 2 rewrites, then the template per caption. Run one match at a time: two at once hit
+the deployment's rate limit. A middleware pins
 every tool call's `as_of` to the trigger's moment, enforces tool budgets and records results for the
 checker.
 

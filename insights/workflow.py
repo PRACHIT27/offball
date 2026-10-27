@@ -129,6 +129,15 @@ async def _agents(team: Team, f: dict, p: dict, run: RunContext, out: _Progress)
         failed = {k: checker.check_caption(k, out.captions.get(k, ""), g) or
                   ([] if out.captions.get(k) else ["missing"]) for k in KEYS}
         failed = {k: v for k, v in failed.items() if v}
+        if team.safety:
+            clean = {k: out.captions[k] for k in KEYS if k not in failed}
+            try:
+                for k, v in (await team.safety.review(clean, g)).items():
+                    if v:
+                        failed[k] = v
+            except Exception as e:  # unverified captions never go on air
+                failed.update({k: [f"safety check unavailable: {type(e).__name__}"]
+                               for k in clean})
         out.passed = set(KEYS) - set(failed)
         if not failed or attempt == MAX_REWRITES:
             out.reasons += [f"{k}: {'; '.join(v)}" for k, v in failed.items()]

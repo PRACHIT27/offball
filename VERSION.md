@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.7.0`**
+**Doc set version: `v2.8.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,22 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.8.0 · 2026-10-27 · Kanika
+**Files:** CLAUDE.md, VERSION.md (code: `insights/safety.py`, `insights/checker.py`, `insights/workflow.py`, `web/public/replays/m00{1,2,3}.json`)
+**Type:** MINOR
+- Checker rules 3 and 5 (IG-23, IG-24), keyless on `offball-ai-kr2610`:
+  - **Translator back-check:** Spanish and Hindi captions are translated back to English and checked like English ones.
+  - **Content Safety:** screens every caption; any severity above 0 takes the caption off air.
+  - **Failure handling:** a flagged caption goes back to the storyteller with the reason. If a service is down, the captions it couldn't check fall back to their templates.
+- Grounding fixes:
+  - IDs (`w-NGU-2-5030-5530`) no longer count as allowed numbers.
+  - A number in a fact's name counts (`xg_per_10_minutes` allows 10).
+  - A colon no longer separates a claim from its numbers.
+  - Rounding to the boundary passes (8.15 → 8.2).
+- All three replays (`m001` red card, `m002` comeback, `m003` switch) carry agent captions.
+- The `gpt-5-mini` deployment (100K TPM) rate-limits two matches at once: run matches one at a time.
+- **Action required:** Lane 3 (viewer): the replays now carry `insights`. Rebuilding a replay with `scripts/build_replay.py` drops them; rerun `python -m insights.local … --agents --replay …` after it.
 
 ## v2.7.0 · 2026-10-27 · Kanika
 **Files:** CLAUDE.md, VERSION.md (code: `insights/`, `mcp_stats/`, `tests/insights/`, `web/public/replays/m001.json`)
