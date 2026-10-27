@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.4.0`**
+**Doc set version: `v2.5.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,23 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.5.0 · 2026-10-27 · Archit
+**Files:** CLAUDE.md, VERSION.md (code: `engine/metrics/`, `engine/service.py`, `engine/store_azure.py`, `scripts/deploy_engine.sh`)
+**Type:** MINOR
+- Performance Metrics is built on branch `performance-metrics` (on top of the Data Ingestion work): every Must in its design plus completion vs expected and heatmaps; pressure seconds and fatigue are not built. Local mode, the Azure path (`stats` hub, Cosmos `metrics`, wired into `engine/service.py`), and truth, delay, restart and Azure-path tests.
+- Merged `main` up to v2.4.0. Metrics consumes the proposed `contracts/ingestion` v1.0.0 as is, so Performance Metrics agrees to it.
+- `engine/service.py` combines the two router hooks: Performance Metrics (`METRICS_ENABLED=1`) and Tactical Intelligence (`TACTICS_ENABLED=1`) both get every merge output, and a failure in one doesn't stop the other. Both are off by default; `scripts/deploy_engine.sh` passes `METRICS_ENABLED` like `TACTICS_ENABLED`.
+- Metrics shares the `stats` hub with Tactical Intelligence. The kinds don't overlap (metrics: `positions`, `player_totals`, `heatmap`, `pass`, `shot`, `xg`; tactics: `window`, `series`, `territory`, `note`). Metrics messages also carry the property `type` (`stats` or `cue`).
+- Tactical Intelligence computes its own pressing and pitch value from frames and events, so `PressureSample` and `PassValues` currently have no listener. They stay available.
+- CLAUDE.md gains a "Lane 1: Performance Metrics" section. Message shapes and per-teammate notes are in `engine/metrics/README.md`; they are not yet in `contracts/`.
+- Decisions beyond the design: movement over 12 m/s is a tracking jump, not running; the best-option arrow shows below a 0.4 decision score; raw positions travel on `stats` as `positions`; number-only cues travel on `stats` with property `type=cue`.
+- **Action required:**
+  - Tactical Intelligence: nothing required; `PressureSample` / `PassValues` are there if you want metrics' carrier pressure instead of your own.
+  - Insight Generation: the Stats API reads Cosmos `metrics` (totals are cumulative; keep the highest event version).
+  - Broadcast / Audience: consume `stats` by the `type` and `kind` properties; the shapes are in the README.
+  - Platform / Data Ingestion: the `stats` hub and `id-engine`'s Data Sender on it now exist (v2.4.0). Still needed before `METRICS_ENABLED=1`: Cosmos container `metrics` (partition `/match_id`) and `id-engine`'s Cosmos role on it. Optional: consumer group `cues` on `stats` for the cue manager. Commands in the README; nothing has been created.
+  - Match Simulation: send `provider_xg` on every shot.
 
 ## v2.4.0 · 2026-10-27 · Prachit
 **Files:** CLAUDE.md, VERSION.md (code: `engine/tactics/`, `engine/service.py`, `scripts/deploy_engine.sh`)

@@ -132,6 +132,33 @@ Rules for any session building Data Ingestion (`ingest/` normalizers, `engine/` 
 `az functionapp scale config always-ready set -g offball-rg -n offball-ingest-kr2610 --settings function:normalize_feed_b=1`.
 Afterwards: `az functionapp scale config always-ready delete -g offball-rg -n offball-ingest-kr2610 --setting-names function:normalize_feed_b`.
 
+## Lane 1: Performance Metrics
+
+Rules for any session building Performance Metrics (`engine/metrics/`). Hand-off notes for every
+teammate: [engine/metrics/README.md](engine/metrics/README.md).
+
+| Rule | Detail |
+|---|---|
+| Design | Build as [lld-performance-metrics.md](docs/design/lld-performance-metrics.md) specifies; decisions beyond it are listed in the README's "Decisions and open items" |
+| Branch | `performance-metrics` (carries the Data Ingestion work it builds on). Never push to `main` |
+| Python | Same `.venv` as Data Ingestion, with Azure extras: `uv pip install --python .venv -e '.[dev,azure]' azure-functions` |
+| Local first | `python -m engine.metrics.local --feeds local_feeds/m001/feeds --out local_out --match m001` (any `python -m sim generate` match or fixture) |
+| Live | Engine with `METRICS_ENABLED=1` (after the Cosmos `metrics` container exists); deploy with `METRICS_ENABLED=1 scripts/deploy_engine.sh` |
+| Plain functions | Formulas in `engine/metrics/calc/` (no state, no I/O); Azure SDK clients only in `engine/service.py`, injected into `sinks_azure.py` |
+| Numbers | Every number comes from code and carries evidence (event IDs, frames); nothing reads `answer-keys/` except `tests/metrics/test_truth.py` |
+| Azure changes | Ask before creating any resource; the commands needed are in the README |
+
+**Others build on this:**
+
+| Teammate | Builds on | Where |
+|---|---|---|
+| Tactical Intelligence | Optional: `PressureSample` per frame and `PassValues` per pass, by direct call (tactics currently computes its own); both share the `stats` hub, kinds don't overlap | README §Tactical Intelligence |
+| Insight Generation (Stats API, MCP) | Cosmos `metrics`: cumulative `player:{id}:{clock}` totals, `event:{id}:{version}` results | README §Insight Generation |
+| Broadcast, Audience | `stats` hub: `positions`, `player_totals`, `heatmap`, `pass`, `shot`, `xg`; number-only cues with `type=cue` | README §Broadcast and Audience |
+| Platform | Before `METRICS_ENABLED=1`: Cosmos container `metrics` and `id-engine`'s Cosmos role on it (the `stats` hub exists); optional `cues` consumer group | README §Platform |
+| Data Ingestion | `engine/service.py` fans the router hook out to metrics and tactics (`fan_out`) | README §Data Ingestion |
+| Match Simulation | `provider_xg` on every shot; realistic acceleration | README §Match Simulation |
+
 ## Lane 1: Match Simulation
 
 `sim/` is the real simulator. It reuses the feed writers, mess rules and streamer from `tests/fixturegen/`, so its feeds follow ingestion §13 and run through the deployed ingestion unchanged.
