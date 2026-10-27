@@ -5,7 +5,7 @@ import { SidePanel } from "./components/SidePanel";
 import { moments, Timeline } from "./components/Timeline";
 import { TopBar } from "./components/TopBar";
 import { snapshotAt } from "./replay";
-import type { Language, MatchListing, Replay, ViewerType } from "./types";
+import type { Language, MatchListing, MetricsView, Replay, ViewerType } from "./types";
 
 const BASE = `${import.meta.env.BASE_URL}replays/`;
 
@@ -31,6 +31,8 @@ export default function App() {
   const [matches, setMatches] = useState<MatchListing[]>([]);
   const [matchId, setMatchId] = useState<string | null>(params.get("match"));
   const [replay, setReplay] = useState<Replay | null>(null);
+  // Performance Metrics side file; optional, the screen works without it
+  const [metrics, setMetrics] = useState<MetricsView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -53,6 +55,9 @@ export default function App() {
     if (!matchId) return;
     setReplay(null);
     setPlaying(false);
+    setMetrics(null);
+    fetch(`${BASE}${matchId}.metrics.json`).then((r) => (r.ok ? r.json() : null))
+      .then((m: MetricsView | null) => setMetrics(m)).catch(() => setMetrics(null));
     fetch(`${BASE}${matchId}.json`).then((r) => r.json()).then((rep: Replay) => {
       setReplay(rep);
       const start = Number(params.get("t") ?? 0) * 1000;
@@ -115,11 +120,11 @@ export default function App() {
               onSpeed={setSpeed} onViewer={setViewer} onLang={setLang} onNextMoment={next} />
       <main className="stage">
         <div className="pitch-wrap">
-          <Pitch replay={replay} t={t} viewer={viewer} focus={focus}
+          <Pitch replay={replay} metrics={metrics} t={t} viewer={viewer} focus={focus}
                  onPickPlayer={(pid) => setFocus((f) => (f === pid ? null : pid))} />
           <CaptionBar replay={replay} t={t} viewer={viewer} lang={lang} />
         </div>
-        {(viewer === "analyst" || focus) && <SidePanel replay={replay} t={t} focus={focus} />}
+        {(viewer === "analyst" || focus) && <SidePanel replay={replay} metrics={metrics} t={t} focus={focus} />}
       </main>
       <Timeline replay={replay} t={t} onSeek={seek} />
     </div>
