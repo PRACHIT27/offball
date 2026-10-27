@@ -41,3 +41,7 @@ test-results/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Browser test tool output
+.playwright-mcp/
+*.tsbuildinfo
