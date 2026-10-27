@@ -144,6 +144,8 @@ Afterwards: `az functionapp scale config always-ready delete -g offball-rg -n of
 | Run ingestion on it | `python -m engine.local --feeds local_feeds/m001/feeds --out local_out/m001 --match m001` |
 | Stream into Azure | `python -m sim stream --feeds local_feeds/m001/feeds --speed 10` |
 | Tests | `python -m pytest tests/sim` (full-match tests take about a minute each) |
+| Match control page, local (counts instead of sending) | `python -m sim.control --dry-run --port 8765`, then open http://localhost:8765 |
+| Deploy match control to Azure (Docker + `az login`) | `[CONTROL_PASSCODE=…] scripts/deploy_sim.sh`: Container App `offball-sim` in `offball-env`, identity `id-sim` with send-only access to the raw hubs |
 
 Output folders: `feeds/` (feed_a.jsonl, feed_b.jsonl), `answer-keys/` (answer_key.json with tactic changes and true player stats, frames_truth.npz with possession per frame), `match/` (match.json, prematch.json, events.jsonl, frames.parquet).
 

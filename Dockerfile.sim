@@ -1,0 +1,13 @@
+FROM python:3.12-slim
+WORKDIR /app
+COPY pyproject.toml ./
+COPY ingest ingest
+COPY engine engine
+COPY sim sim
+COPY tests/__init__.py tests/__init__.py
+COPY tests/fixturegen tests/fixturegen
+RUN pip install --no-cache-dir ".[azure,control]"
+ENV MATCH_CACHE=/tmp/offball-matches
+USER 1000
+EXPOSE 8000
+CMD ["uvicorn", "sim.control.app:app", "--host", "0.0.0.0", "--port", "8000"]

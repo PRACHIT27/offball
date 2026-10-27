@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.1.0`**
+**Doc set version: `v2.2.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,13 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.2.0 · 2026-10-26 · Prachit
+**Files:** CLAUDE.md, VERSION.md (code: `sim/control/`, `Dockerfile.sim`, `scripts/deploy_sim.sh`, `tests/sim/test_control.py`, pyproject.toml)
+**Type:** MINOR
+- Match control: a web page with a Play button that generates (or reuses) a match and streams both feeds into the raw hubs, with live status (preparing, live, half-time, full time; match minute; messages sent) and Stop. One match at a time; optional passcode (`CONTROL_PASSCODE`). This is the Platform design's "run live" button.
+- Hosting: Container App `offball-sim` in `offball-env`, external ingress, one warm replica, managed identity `id-sim` (Event Hubs Data Sender on `raw-events` and `raw-tracking` only). `scripts/deploy_sim.sh` creates the identity and roles if missing.
+- **Action required:** someone with `az login` on `offball-rg` runs `scripts/deploy_sim.sh` (it creates `id-sim` and the Container App). Lane 3 can link to the page as a separate tab.
 
 ## v2.1.0 · 2026-10-26 · Prachit
 **Files:** CLAUDE.md, VERSION.md (code: `sim/`, `tests/sim/`, pyproject.toml)
