@@ -139,7 +139,7 @@ Afterwards: `az functionapp scale config always-ready delete -g offball-rg -n of
 | Task | Command |
 |---|---|
 | Generate a match (feeds + answer key + truth files) | `python -m sim generate --storyline red_card --out local_feeds/m001` |
-| Storylines | `red_card` (m001, RIV v NGU), `comeback` (m002, NGU v KVA), `switch` (m003, KVA v RIV), or a JSON file |
+| Storylines | `red_card` (m001), `comeback` (m002), `switch` (m003), `late_drama` (m004), `press_fade` (m005), `storm` (m006); `random --seed N` invents a new match story per seed; or a JSON file |
 | Short match for quick tests | add `--minutes 5` |
 | Run ingestion on it | `python -m engine.local --feeds local_feeds/m001/feeds --out local_out/m001 --match m001` |
 | Stream into Azure | `python -m sim stream --feeds local_feeds/m001/feeds --speed 10` |

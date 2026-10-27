@@ -13,7 +13,7 @@ def main() -> None:
     sub = ap.add_subparsers(dest="cmd", required=True)
     g = sub.add_parser("generate", help="simulate a match and write feeds + answer key")
     g.add_argument("--storyline", default="red_card",
-                   help=f"built-in ({', '.join(BUILT_IN)}) or a JSON file")
+                   help=f"built-in ({', '.join(BUILT_IN)}), random (use --seed) or a JSON file")
     g.add_argument("--out", type=Path, required=True)
     g.add_argument("--mess", choices=["off", "light", "full"], default="light")
     g.add_argument("--minutes", type=float, default=None,
@@ -26,9 +26,7 @@ def main() -> None:
     args = ap.parse_args()
 
     if args.cmd == "generate":
-        story = load(args.storyline)
-        if args.seed is not None:
-            story.seed = args.seed
+        story = load(args.storyline, args.seed)
         period_s = (args.minutes * 60, args.minutes * 60) if args.minutes else (2790.0, 2880.0)
         t0 = time.perf_counter()
         m = generate(story, args.out, args.mess, period_s=period_s)

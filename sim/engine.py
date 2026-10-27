@@ -85,7 +85,7 @@ class Engine:
         self.force_goal = {self.home: -1, self.away: -1}
         self.cond = dict(story.start_conditions)
         scripted = any(dv.action == "goal" for dv in story.directives)
-        self.natural_goals = 0.06 if scripted else 0.3
+        self.natural_goals = 0.0 if scripted else 0.3
         self.natural_reds = not any(dv.action == "red_card" for dv in story.directives)
         self.dist = np.zeros(len(self.players))
         self.top = np.zeros(len(self.players))
@@ -490,8 +490,12 @@ class Engine:
                 self.stoppage_end = (end, sid, dv.conditions["reason"])
                 self.restart(f, end - f, slot=self.carrier, spot=self.ball[:2].copy())
             elif dv.action == "sub":
-                slot = int(np.flatnonzero(self.slot_code == self.code[dv.player])[0])
-                if slot == self.carrier or not self.on[slot]:
+                found = np.flatnonzero(self.slot_code == self.code[dv.player])
+                if len(found) == 0 or not self.on[found[0]]:
+                    self.done.add(i)
+                    continue
+                slot = int(found[0])
+                if slot == self.carrier:
                     continue
                 self.emit(f, "sub_off", slot)
                 self.slot_code[slot] = self.code[dv.sub_on]
@@ -499,7 +503,11 @@ class Engine:
                 self.stamina[slot] = 1.0
                 self.emit(f, "sub_on", slot)
             elif dv.action == "red_card":
-                slot = int(np.flatnonzero(self.slot_code == self.code[dv.player])[0])
+                found = np.flatnonzero(self.slot_code == self.code[dv.player])
+                if len(found) == 0 or not self.on[found[0]]:
+                    self.done.add(i)
+                    continue
+                slot = int(found[0])
                 if slot == self.carrier:
                     continue
                 self.send_off(f, slot, ["denying_goal_chance"])
@@ -510,9 +518,10 @@ class Engine:
             self.stoppage_end = None
         for team in (self.home, self.away):
             started = self.force_goal[team]
-            if started >= 0 and f - started > int(240 / DT) and self.carrier is not None \
+            if started >= 0 and f - started > int(90 / DT) and self.carrier is not None \
                     and self.team_of(self.carrier) == team and self.flight is None \
-                    and self.depth(team, self.pos[self.carrier][0]) > 60:
+                    and (self.depth(team, self.pos[self.carrier][0]) > 52
+                         or self.n_frames - f < int(60 / DT)):
                 self.act_shot(f, self.carrier, team)
 
     def targets(self, f: int) -> np.ndarray:
@@ -620,6 +629,7 @@ class Engine:
     def run_period(self, period: int, length_s: float, kickoff_team: str) -> PeriodFrames:
         self.period = period
         n = int(length_s / DT)
+        self.n_frames = n
         self.pos = np.zeros((22, 2))
         self.vel = np.zeros((22, 2))
         self.ball = np.array([*CENTRE, 0.0])

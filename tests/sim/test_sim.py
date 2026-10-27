@@ -133,3 +133,26 @@ def test_ingestion_recovers_the_simulated_match(full, tmp_path):
     assert len(active & truth_ids) / len(truth_ids) >= 0.99
     assert not store.dead_letters
     assert abs(r.counts["clock_offset_ms"] - full.clock_offset_ms) <= 80
+
+
+def test_every_built_in_storyline_loads():
+    from sim.storyline import load
+    for name in BUILT_IN:
+        story = load(name)
+        assert story.directives and story.home != story.away
+
+
+def test_random_storylines_are_repeatable_and_varied():
+    from sim.storyline import random_story
+    a, b = random_story(12), random_story(12)
+    assert [(d.period, d.at_s, d.action, d.team) for d in a.directives] == \
+        [(d.period, d.at_s, d.action, d.team) for d in b.directives]
+    fixtures = {(random_story(s).home, random_story(s).away) for s in range(1, 30)}
+    assert len(fixtures) >= 4
+
+
+def test_random_storyline_plays_a_full_short_match(tmp_path):
+    from sim.storyline import random_story
+    story = random_story(5)
+    m = generate(story, tmp_path, "light", period_s=SHORT, halftime_s=60)
+    assert m.truth.events and (m.feeds_dir / "feed_b.jsonl").exists()
