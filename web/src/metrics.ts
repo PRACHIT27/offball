@@ -26,6 +26,12 @@ export function metricCuesAt(m: MetricsView | null, t: number) {
   return out;
 }
 
+export function ballSpeedAt(m: MetricsView | null, t: number): number | null {
+  if (!m?.ball?.length) return null;
+  const i = lastIndex(m.ball, t, (x) => x[0]);
+  return i < 0 ? null : m.ball[i][1];
+}
+
 export function heatAt(m: MetricsView | null, pid: string, t: number) {
   if (!m) return null;
   const i = lastIndex(m.heat.snapshots, t, (s) => s.t);

@@ -12,6 +12,8 @@ engine's metrics outputs (never the answer key):
 - passing: per team every minute, cumulative attempts, accuracy, average difficulty and
   completion vs expected;
 - pressure: each player's pressure (0–100) once a second;
+- ball: ball speed in km/h at 5 per second (one per frame batch);
+- passes: open options and decision score per pass event, for the pass arcs;
 - cues: distance milestones and shot speeds with their anchors.
 """
 
@@ -66,6 +68,7 @@ def build(feeds: Path, match_id: str) -> dict:
 
     order = engine.roster.ids
     heat, pressure, last_heat, last_pressure = [], [], -HEAT_EVERY_MS, -1000
+    ball = []
     for s in stats:
         now = t(s.period, s.match_clock_ms)
         if s.kind == "heatmap":
@@ -77,7 +80,9 @@ def build(feeds: Path, match_id: str) -> dict:
                     if maps["match"] is not None:
                         heat[-1]["players"][pid] = {"match": per_mille(maps["match"]),
                                                     "last_15": per_mille(maps["last_15"])}
-        elif s.kind == "positions" and now - last_pressure >= 1000:
+        elif s.kind == "positions" and s.values.get("ball_speed_ms") is not None:
+            ball.append([now, round(s.values["ball_speed_ms"] * 3.6)])
+        if s.kind == "positions" and now - last_pressure >= 1000:
             tags = s.values["tags"]
             pressure.append([now, [round(tags[pid]["pressure"] * 100) if pid in tags else -1
                                    for pid in order]])
@@ -132,7 +137,10 @@ def build(feeds: Path, match_id: str) -> dict:
     return {
         "schema": "offball-metrics/1", "match_id": match_id, "order": order,
         "heat": {"grid": [21, 14], "snapshots": heat},
-        "shots": shots, "passing": passing, "pressure": pressure,
+        "shots": shots, "passing": passing, "pressure": pressure, "ball": ball,
+        "passes": {s.evidence.event_ids[0]: {"open_options": s.values["open_options"],
+                                             "decision_score": s.values["decision_score"]}
+                   for s in finals if s.kind == "pass"},
         "cues": sorted(({"t": t(c["period"], c["start_clock_ms"]), "kind": c["kind"],
                          "duration_ms": c["duration_ms"], "anchor": c["anchor"],
                          "data": c["data"]} for c in cues.values() if c["status"] == "on_air"),

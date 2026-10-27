@@ -130,6 +130,7 @@ button, select { font: inherit; color: inherit; }
 /* Performance Metrics overlays */
 .press-ring.under { stroke-dasharray: 0.6 0.5; stroke-width: 0.3; }
 .metric-cue rect { fill: rgba(15, 21, 18, 0.88); stroke: var(--highlight); stroke-width: 0.15; }
+.ball-speed { font-family: var(--mono); font-size: 1.1px; fill: #ffffff; paint-order: stroke; stroke: rgba(10, 20, 14, 0.85); stroke-width: 0.35px; }
 .metric-cue text { font-family: var(--mono); font-size: 1.2px; fill: var(--highlight); }
 .shotmap, .heatmap { width: 100%; display: block; margin-top: 4px; }
 .mini-pitch { fill: var(--pitch); }

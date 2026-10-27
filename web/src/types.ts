@@ -123,6 +123,10 @@ export interface MetricsView {
     avg_difficulty: number; completion_vs_expected: number }> }[];
   /** [t, pressure 0–100 per player in `order`, -1 when off the pitch], once a second. */
   pressure: [number, number[]][];
+  /** [t, ball speed km/h], 5 per second (absent in side files built before it existed). */
+  ball?: [number, number][];
+  /** Per pass event: open options and decision score (PM-16, PM-17). */
+  passes?: Record<string, { open_options: number | null; decision_score: number | null }>;
   cues: { t: number; kind: string; duration_ms: number; anchor: { x: number; y: number } | null;
     data: Record<string, any> }[];
 }

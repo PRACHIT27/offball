@@ -1,4 +1,4 @@
-import { metricCuesAt, PRESS_RING, pressureAt } from "../metrics";
+import { ballSpeedAt, metricCuesAt, PRESS_RING, pressureAt } from "../metrics";
 import { activeCues, latestSeries, snapshotAt, speedsAt, surname } from "../replay";
 import type { MetricsView, Replay, ViewerType } from "../types";
 
@@ -65,6 +65,7 @@ export function Pitch({ replay: r, metrics, t, viewer, focus, onPickPlayer }: Pr
   // From the metrics side file: pressure on every player, shot speeds, distance milestones
   const pressure = pressureAt(metrics, t);
   const extra = metricCuesAt(metrics, t);
+  const ballKmh = ballSpeedAt(metrics, t);
 
   // Pressure rings: opponents within 2 m of the ball carrier (pressure ≥ 0.75)
   let carrier: string | null = null;
@@ -133,6 +134,10 @@ export function Pitch({ replay: r, metrics, t, viewer, focus, onPickPlayer }: Pr
                   strokeDasharray={arc.data.completed ? undefined : "1 0.7"} markerEnd="url(#arrow)" />
             <text x={mx} y={my - 1} className="arc-label" textAnchor="middle">
               {arc.data.distance_m?.toFixed(0)} m · {arc.data.speed_ms ? `${(arc.data.speed_ms * 3.6).toFixed(0)} km/h · ` : ""}difficulty {arc.data.difficulty}
+              {(() => {
+                const open = metrics?.passes?.[arc.evidence.event_ids[0]]?.open_options;
+                return typeof open === "number" ? ` · ${open} open option${open === 1 ? "" : "s"}` : "";
+              })()}
             </text>
           </g>
         );
@@ -210,6 +215,12 @@ export function Pitch({ replay: r, metrics, t, viewer, focus, onPickPlayer }: Pr
       })}
 
       {snap.ball && <circle cx={snap.ball[0]} cy={snap.ball[1]} r={0.6} className="ball" />}
+      {/* Ball speed only while it travels: at a player's feet the pressure label sits there */}
+      {snap.ball && viewer === "analyst" && !carrier && ballKmh !== null && ballKmh >= 20 && (
+        <text x={snap.ball[0]} y={snap.ball[1] - 1.2} className="ball-speed" textAnchor="middle">
+          {ballKmh} km/h
+        </text>
+      )}
 
       <defs>
         <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4"
