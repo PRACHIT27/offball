@@ -1,4 +1,5 @@
-"""Write the Data Ingestion contracts in contracts/ingestion/ as JSON Schema, from the Pydantic models.
+"""Write the Data Ingestion contracts in contracts/ingestion/ as JSON Schema, from the Pydantic
+models.
 
 The models are the source of truth; tests/engine/test_contracts.py fails if the files drift.
 Usage: python -m engine.contracts
