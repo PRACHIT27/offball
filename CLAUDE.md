@@ -212,6 +212,15 @@ checker.
 | MCP stats server alone | `OFFBALL_MATCH_DATA=local_out/m001/insights/data python -m mcp_stats.server` (stdio; works with any MCP client) |
 | Tests | `python -m pytest tests/insights` |
 
+**Live:** Container App `offball-insights` (identity `id-insights`) reads triggers from `triggers`
+(consumer group `agents`) and windows from `stats` (consumer group `insights`), events and pre-match
+info from Cosmos `events`, and runs the agent team per trigger. Live captions page:
+https://offball-insights.whitemoss-2f18829c.westus2.azurecontainerapps.io (`/health` shows counts and the
+last error). Deploy with `scripts/deploy_insights.sh` (Docker running; if the push to the registry drops,
+rerun it). To test: `scripts/engine.sh start`, then Play on match control with a new match (a random
+seed: a replayed match ID is deduplicated by the engine). The deployment's rate limit allows one live
+match at a time.
+
 **Azure:** AI Services (Foundry) `offball-ai-kr2610` in **Sweden Central** (the subscription allows
 only canadacentral, mexicocentral, swedencentral, westus2 and belgiumcentral; westus2 has no small-model
 quota), endpoint `https://offball-ai-kr2610.cognitiveservices.azure.com/`, deployment `gpt-5-mini`

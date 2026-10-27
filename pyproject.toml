@@ -16,7 +16,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.5", "httpx>=0.27"]
 control = ["fastapi>=0.110", "uvicorn>=0.29"]
-insights = ["agent-framework-core>=1.23", "agent-framework-openai>=1.17", "mcp>=2.3", "azure-identity>=1.15", "httpx>=0.27", "aiohttp>=3.9"]
+insights = ["agent-framework-core>=1.23", "agent-framework-openai>=1.17", "tenacity>=8", "mcp>=2.3", "azure-identity>=1.15", "httpx>=0.27", "aiohttp>=3.9"]
 azure = [
     "azure-identity>=1.15",
     "azure-eventhub>=5.11",
