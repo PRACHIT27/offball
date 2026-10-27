@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.3.0`**
+**Doc set version: `v2.4.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,14 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.4.0 · 2026-10-27 · Prachit
+**Files:** CLAUDE.md, VERSION.md (code: `engine/tactics/`, `engine/service.py`, `scripts/deploy_engine.sh`)
+**Type:** MINOR
+- Tactical Intelligence runs on the live engine when `TACTICS_ENABLED=1`: it plugs into the engine's router hook and publishes windows, series, territory and notes to the new `stats` hub and triggers to the new `triggers` hub (partition key `match_id`). If a restart missed the pre-match info it reads it from Cosmos.
+- New Azure resources: hubs `stats` (consumer groups `bridge`, `fabric`) and `triggers` (`agents`, `fabric`), 2 partitions, 24 h retention; `id-engine` has Event Hubs Data Sender on both.
+- Tuned defaults (scored on six storylines against the answer key): pressing must change 50% and by 1.5 presses/min; a change is confirmed after 5 minutes (tentative still at 2). Keeps every catch the old settings had; false alarms down about a third on Red Card and half on Switch.
+- **Action required:** Lane 2 reads triggers from `triggers` with consumer group `agents`. Lane 3 reads `stats` with consumer group `bridge`. The Performance Metrics branch will conflict in `engine/service.py` (both use the router hook); combine the two routers there.
 
 ## v2.3.0 · 2026-10-27 · Prachit
 **Files:** CLAUDE.md, VERSION.md (code: `engine/tactics/`, `tests/tactics/`)

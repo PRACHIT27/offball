@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import UTC, datetime
 from typing import Protocol
 
@@ -46,10 +47,22 @@ class EventHubSender:
             try:
                 batch.add(event)
             except ValueError:
-                producer.send_batch(batch)
+                self._send_with_retry(producer, batch)
                 batch = producer.create_batch(partition_key=match_id)
                 batch.add(event)
-        producer.send_batch(batch)
+        self._send_with_retry(producer, batch)
+
+    @staticmethod
+    def _send_with_retry(producer, batch, attempts: int = 8) -> None:
+        for i in range(attempts):
+            try:
+                producer.send_batch(batch)
+                return
+            except Exception as e:
+                busy = "server-busy" in str(e) or "throttl" in str(e).lower()
+                if not busy or i == attempts - 1:
+                    raise
+                time.sleep(min(2 ** i, 8))
 
     def close(self) -> None:
         for p in self.producers.values():

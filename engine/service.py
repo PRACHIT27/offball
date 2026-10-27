@@ -53,6 +53,26 @@ def _props(event) -> dict:
             for k, v in (event.properties or {}).items()}
 
 
+def tactics_router(cred, cosmos):
+    """Tactical Intelligence on the router hook, publishing to the `stats` and `triggers` hubs.
+    Off unless TACTICS_ENABLED=1, so the engine runs the same as before without those hubs."""
+    if os.environ.get("TACTICS_ENABLED") != "1":
+        return None
+    from azure.core.exceptions import ResourceNotFoundError
+
+    from engine.tactics.router import EventHubPublisher, TacticsRouter
+
+    def prematch(match_id: str) -> dict | None:
+        try:
+            return cosmos.read_item("prematch", partition_key=match_id)["prematch"]
+        except ResourceNotFoundError:
+            return None
+
+    publisher = EventHubPublisher(os.environ["EVENTHUB_NAMESPACE"], cred)
+    log.info("tactical intelligence on: publishing to stats and triggers")
+    return TacticsRouter(publisher, prematch)
+
+
 async def run() -> None:
     client_id = os.environ["AZURE_CLIENT_ID"]
     cred = ManagedIdentityCredential(client_id=client_id)
@@ -61,8 +81,10 @@ async def run() -> None:
     cosmos = (CosmosClient(os.environ["COSMOS_ENDPOINT"], credential=cred)
               .get_database_client("offball").get_container_client("events"))
     frames = blobs.get_container_client("silver-frames")
+    router = tactics_router(cred, cosmos)
     core = EngineCore(lambda match_id: AzureStore(match_id, cosmos, frames),
-                      BlobSnapshots(blobs.get_container_client("checkpoints")))
+                      BlobSnapshots(blobs.get_container_client("checkpoints")),
+                      **({"router": router} if router else {}))
 
     # The engine core and its Cosmos/Blob calls are blocking: they run in a worker thread, one
     # message at a time (the lock), so the receive loop keeps pulling from the hub meanwhile

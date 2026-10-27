@@ -46,7 +46,7 @@ def test_page_and_storylines(client):
 
 
 def test_play_streams_every_message_once(client):
-    r = client.post("/api/play", json={"storyline": "red_card", "speed": 60, "mess": "light"})
+    r = client.post("/api/play", json={"storyline": "red_card", "speed": 10, "mess": "light"})
     assert r.status_code == 200
     assert client.post("/api/play", json={"storyline": "storm"}).status_code == 409
     s = wait_for(client, {"finished", "error"})
@@ -65,6 +65,6 @@ def test_stop_ends_the_run(client):
 
 def test_bad_requests_are_rejected(client, monkeypatch):
     assert client.post("/api/play", json={"storyline": "nope"}).status_code == 400
-    assert client.post("/api/play", json={"storyline": "red_card", "speed": 500}).status_code == 400
+    assert client.post("/api/play", json={"storyline": "red_card", "speed": 30}).status_code == 400
     monkeypatch.setenv("CONTROL_PASSCODE", "pitch")
     assert client.post("/api/play", json={"storyline": "red_card"}).status_code == 401

@@ -80,8 +80,8 @@ class Runner:
     def play(self, storyline: str, seed: int | None, speed: float, mess: str) -> dict:
         if storyline not in BUILT_IN and storyline != "random":
             raise ValueError(f"unknown storyline {storyline}")
-        if not 1 <= speed <= 60:
-            raise ValueError("speed must be between 1 and 60")
+        if not 1 <= speed <= 10:
+            raise ValueError("speed must be between 1 and 10 (the Event Hubs tier throttles above)")
         if mess not in ("off", "light", "full"):
             raise ValueError("mess must be off, light or full")
         if self.busy():

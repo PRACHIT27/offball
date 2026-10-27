@@ -97,3 +97,40 @@ def test_detects_the_storyline_changes(red_card):
     found = {(m["team_id"], m["measure"], round(m["at_ms"] / 60000)) for m in report["matches"]}
     assert ("NGU", "line_height_m", 71) in found
     assert ("NGU", "formation_out", 46) in found
+
+
+def test_router_publishes_the_same_results_as_local_mode(tmp_path):
+    from engine.local import run
+    from engine.tactics.router import TacticsRouter
+    from sim.storyline import Directive, Storyline
+
+    story = Storyline("short", "t002", 3, "RIV", "NGU",
+                      [Directive(2, 60.0, "red_card", team="NGU", player="NGU-04")])
+    m = generate(story, tmp_path, "light", period_s=(420.0, 420.0), halftime_s=60)
+    outputs, _ = run(m.feeds_dir, "t002")
+    published = []
+    router = TacticsRouter(published.extend)
+    for msg in outputs:
+        router([msg])
+    assert router.counts["stats"] > 0 and router.counts["triggers"] > 0
+    kinds = {r.get("kind") or r["type"] for r in published}
+    assert {"window", "series", "crux"} <= kinds
+    assert all(r["match_id"] == "t002" for r in published)
+
+
+def test_router_loads_prematch_when_it_missed_it(tmp_path):
+    from engine.local import run
+    from engine.merge.outputs import Prematch
+    from engine.tactics.router import TacticsRouter
+    from sim.storyline import Storyline
+
+    m = generate(Storyline("short", "t003", 4, "KVA", "RIV", []), tmp_path, "off",
+                 period_s=(400.0, 120.0), halftime_s=60)
+    outputs, _ = run(m.feeds_dir, "t003")
+    prematch = next(o.prematch for o in outputs if isinstance(o, Prematch))
+    published = []
+    router = TacticsRouter(published.extend, prematch_loader=lambda mid: prematch)
+    for msg in outputs:
+        if not isinstance(msg, Prematch):
+            router([msg])
+    assert any(r.get("kind") == "window" for r in published)
