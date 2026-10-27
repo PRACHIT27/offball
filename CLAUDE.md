@@ -189,3 +189,14 @@ Output folders: `feeds/` (feed_a.jsonl, feed_b.jsonl), `answer-keys/` (answer_ke
 | Tests | `python -m pytest tests/tactics` |
 | Live | Engine with `TACTICS_ENABLED=1` publishes to hubs `stats` (consumer groups `bridge`, `fabric`) and `triggers` (`agents`, `fabric`); deploy with `TACTICS_ENABLED=1 scripts/deploy_engine.sh` |
 
+## Lane 3: Viewer screen
+
+`web/` (React + TypeScript + Vite) plays replays built by `scripts/build_replay.py` (a simulated match through ingestion, metrics and tactics). Details: [web/README.md](web/README.md).
+
+| Task | Command |
+|---|---|
+| Live site | https://jolly-cliff-0ccede51e.4.azurestaticapps.net (Static Web App `offball-web`, Free, `offball-rg`) |
+| Run locally | `cd web && npm install && npm run dev` |
+| Build replays | `PYTHONPATH=. python scripts/build_replay.py --storyline red_card --out web/public/replays` |
+| Deploy by hand | `cd web && npm ci && npm run build`, then the SWA CLI command in web/README.md (`az login` needed; never print the token) |
+| Deploy automatically | `.github/workflows/web.yml` on push to `main`, once a repo admin adds secret `AZURE_STATIC_WEB_APPS_API_TOKEN` |

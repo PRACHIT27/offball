@@ -1,5 +1,8 @@
 # OffBall viewer screen
 
+**Live:** https://jolly-cliff-0ccede51e.4.azurestaticapps.net
+(red card at 70': https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4300&type=analyst)
+
 The viewer screen from [lld-audience.md](../docs/design/lld-audience.md): the pitch, a caption bar,
 a side panel and a timeline. React + TypeScript + Vite, with the pitch drawn in SVG.
 
@@ -47,3 +50,23 @@ Keys: space plays and pauses, ← → move 10 s. Links can open a moment:
   dropped), xG, totals every minute, tactics series, confirmed notes and triggers.
 - **Time:** `t` is ms of play since kick-off, continuous across both halves.
 - **Size:** about 7 MB for a full match, about 2 MB gzipped.
+
+## Deploy (Azure Static Web Apps)
+
+Static Web App `offball-web` (Free) in `offball-rg`. `public/staticwebapp.config.json` sets:
+- the fallback to `index.html`, so share links work;
+- caching: replays 1 h, hashed assets for good.
+
+Responses are brotli-compressed, so a 7 MB replay comes over as about 2 MB.
+
+By hand (needs `az login` on the subscription; the token is never printed or saved):
+
+```sh
+cd web && npm ci && npm run build
+SWA_TOKEN=$(az staticwebapp secrets list -n offball-web -g offball-rg --query properties.apiKey -o tsv)
+npx @azure/static-web-apps-cli@2 deploy ./dist --deployment-token "$SWA_TOKEN" --env production
+```
+
+Automatically: `.github/workflows/web.yml` builds on every PR and deploys on pushes to `main`,
+once a repo admin adds the secret `AZURE_STATIC_WEB_APPS_API_TOKEN` (the command is in the
+workflow file).

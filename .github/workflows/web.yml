@@ -1,0 +1,44 @@
+# Build the viewer screen and deploy it to Azure Static Web Apps (offball-web) on every push to
+# main that touches web/. Needs the repo secret AZURE_STATIC_WEB_APPS_API_TOKEN (a repo admin adds
+# it once: az staticwebapp secrets list -n offball-web -g offball-rg --query properties.apiKey -o tsv
+# | gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN). Without it the job only builds.
+name: web
+
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", ".github/workflows/web.yml"]
+  pull_request:
+    paths: ["web/**", ".github/workflows/web.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    # Job-level, so the deploy step's `if` can see whether the secret exists
+    env:
+      SWA_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Deploy to Static Web Apps
+        if: github.event_name != 'pull_request' && env.SWA_TOKEN != ''
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          app_location: web/dist
+          skip_app_build: true
+          skip_api_build: true
