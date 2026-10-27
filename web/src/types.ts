@@ -106,3 +106,23 @@ export interface MatchListing {
 }
 
 export type ViewerType = "casual" | "analyst";
+
+/** Performance Metrics side file (`{match_id}.metrics.json`, scripts/build_metrics_view.py). */
+export interface MetricsView {
+  schema: string;
+  match_id: string;
+  order: string[];
+  heat: {
+    grid: [number, number];
+    /** Per-mille shares of each player's frames per 5 m cell, every 5 minutes. */
+    snapshots: { t: number; players: Record<string, { match: number[][]; last_15: number[][] | null }> }[];
+  };
+  shots: { t: number; id: string; team: string; player: string; x: number | null; y: number | null;
+    xg: number | null; speed_kmh: number | null; outcome: string }[];
+  passing: { t: number; teams: Record<string, { attempts: number; accuracy: number;
+    avg_difficulty: number; completion_vs_expected: number }> }[];
+  /** [t, pressure 0–100 per player in `order`, -1 when off the pitch], once a second. */
+  pressure: [number, number[]][];
+  cues: { t: number; kind: string; duration_ms: number; anchor: { x: number; y: number } | null;
+    data: Record<string, any> }[];
+}

@@ -126,3 +126,18 @@ button, select { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .caption-text, .overlay { animation: none; transition: none; }
 }
+
+/* Performance Metrics overlays */
+.press-ring.under { stroke-dasharray: 0.6 0.5; stroke-width: 0.3; }
+.metric-cue rect { fill: rgba(15, 21, 18, 0.88); stroke: var(--highlight); stroke-width: 0.15; }
+.metric-cue text { font-family: var(--mono); font-size: 1.2px; fill: var(--highlight); }
+.shotmap, .heatmap { width: 100%; display: block; margin-top: 4px; }
+.mini-pitch { fill: var(--pitch); }
+.mini-line { fill: none; stroke: var(--pitch-line); stroke-width: 0.35; opacity: 0.6; }
+.stat-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.stat-table th { color: var(--muted); font-family: var(--sans); font-weight: 500; font-size: 11px; text-align: right; padding: 2px 4px; }
+.stat-table td { text-align: right; padding: 3px 4px; }
+.stat-table td:first-child, .stat-table th:first-child { text-align: left; }
+.heat-block { margin-top: 10px; }
+.seg.small button { padding: 3px 8px; font-size: 12px; background: var(--panel-2); border: 1px solid var(--border); cursor: pointer; }
+.seg.small button.on { background: var(--pitch); border-color: var(--pitch-line); }

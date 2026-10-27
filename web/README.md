@@ -40,6 +40,23 @@ Add `--minutes 10` to build a quick short match.
 Keys: space plays and pauses, ← → move 10 s. Links can open a moment:
 `/?match=m001&t=4200&type=analyst` (t in seconds of play).
 
+## Performance Metrics view
+
+`{match_id}.metrics.json` sits next to each replay, written by `scripts/build_metrics_view.py`. It
+is optional: the screen works without it. It adds:
+- **Pitch:** the ball carrier's pressure from metrics (a dashed ring at ≥ 0.75, and the value in
+  analyst view); shot-speed and distance-milestone badges.
+- **Side panel:** a shot map (dot size = xG, filled = goal), and passing per team (accuracy, the
+  pass model's expected accuracy, average difficulty).
+- **Player card:** a 21 × 14 heatmap, for the whole match or the last 15 minutes.
+
+```sh
+PYTHONPATH=. python scripts/build_metrics_view.py --storyline red_card --match m001
+```
+
+It re-simulates the storyline (deterministic, so the same match as the replay) and never touches
+`{match_id}.json`, which also holds Insight Generation's captions.
+
 ## Replay file
 
 `scripts/build_replay.py` writes `web/public/replays/{match_id}.json` and updates `index.json`.
