@@ -121,8 +121,10 @@ class InsightService:
                 log.info("insight %s %s %s %.1f s: %s", insight.trigger_id, insight.kind,
                          insight.caption_source, insight.latency_ms / 1000,
                          insight.captions["analyst.en"])
-            except Exception:
+            except Exception as e:
                 self.counts["errors"] += 1
+                self.last_error = f"{trigger.get('trigger_id')}: " + "".join(
+                    traceback.format_exception(e))[-1500:]
                 log.exception("insight failed for %s", trigger.get("trigger_id"))
 
     # ---------- HTTP ----------
