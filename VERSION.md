@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.8.0`**
+**Doc set version: `v2.9.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,18 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.9.0 · 2026-10-27 · Kanika
+**Files:** CLAUDE.md, VERSION.md (code: `insights/service.py`, `insights/live.html`, `Dockerfile.insights`, `scripts/deploy_insights.sh`)
+**Type:** MINOR
+- Live Insight Generation on Azure. Container App `offball-insights` (identity `id-insights`) turns triggers into checked captions while a match plays, and serves them on a live captions page (4 viewer types × EN, ES, HI) and at `/api/insights`.
+- New Azure resources:
+  - Identity `id-insights` with Event Hubs Data Receiver on `triggers` and `stats`, Cosmos Built-in Data Reader on `events`, Cognitive Services OpenAI User and Cognitive Services User on `offball-ai-kr2610`, and AcrPull.
+  - Consumer group `insights` on `stats`.
+  - The Container App: 1 replica, external ingress.
+- Tested on a live random match (`r2711`, 10×): captions arrive about 8 s (expect) to 20 s after each trigger.
+- Not yet: insights are kept in memory (a restart loses them; Cosmos `insights` is the next step); the viewer screen's live mode doesn't read them yet.
+- **Action required:** Lane 3 can show live captions from `GET /api/insights?match_id=…&since=…` (JSON, newest via `since`). Stop the app when not demoing: `az containerapp` is unavailable on Python 3.14 CLIs, so use the ARM `stop` call as in `scripts/engine.sh`.
 
 ## v2.8.0 · 2026-10-27 · Kanika
 **Files:** CLAUDE.md, VERSION.md (code: `insights/safety.py`, `insights/checker.py`, `insights/workflow.py`, `web/public/replays/m00{1,2,3}.json`)
