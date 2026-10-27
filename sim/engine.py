@@ -11,6 +11,9 @@ DT = FRAME_MS / 1000
 CENTRE = np.array([52.5, 34.0])
 SPRINT_MS = 7.0
 FOUL_REASONS = ["late_tackle", "from_behind", "holding", "pushing"]
+SHAPE_MIN_LENGTH = 18.0
+PASS_WEIGHTS = {"open": 1.2, "open_m": 10.0, "progress": 1.0, "fit": 0.6, "lane": 0.8,
+                "lane_m": 2.0, "return": 1.2, "gk": 1.2}
 START_HINT = {1: (0, .1), 2: (0, .37), 3: (0, .63), 4: (0, .9), 5: (.4, .5), 6: (.5, .3),
               7: (.5, .7), 8: (1, .15), 9: (1, .5), 10: (1, .85)}
 
@@ -86,7 +89,8 @@ class Engine:
         self.cond = dict(story.start_conditions)
         scripted = any(dv.action == "goal" for dv in story.directives)
         self.natural_goals = 0.0 if scripted else 0.3
-        self.natural_reds = not any(dv.action == "red_card" for dv in story.directives)
+        self.natural_reds = not scripted and not any(dv.action == "red_card"
+                                                     for dv in story.directives)
         self.dist = np.zeros(len(self.players))
         self.top = np.zeros(len(self.players))
         self.sprints = np.zeros(len(self.players), dtype=int)
@@ -242,6 +246,7 @@ class Engine:
         self.pos[slot] = self.ball[:2] - [self.d(team) * 0.4, 0]
         self.vel[slot] *= 0.3
         self.carrier = slot
+        self.last_from = None
         self.possession = team
         self.next_action = f + self.wait(lo, hi)
 
@@ -275,16 +280,19 @@ class Engine:
         dist = np.linalg.norm(rel, axis=1)
         near_opp = np.array([np.min(np.linalg.norm(self.pos[opp] - self.pos[m], axis=1))
                              for m in mates])
-        openness = np.clip(near_opp / 10, 0, 1)
+        pw = PASS_WEIGHTS
+        openness = np.clip(near_opp / pw["open_m"], 0, 1)
         progress = np.clip(rel[:, 0] * self.d(team) / 30, -1, 1)
         norm_len = np.clip((dist - 5) / 35, 0, 1)
         fit = 1 - np.abs(norm_len - tac.pass_length_pref)
-        lane = np.array([int(np.sum(seg_dist(self.pos[opp], here, self.pos[m]) < 2.0))
+        lane = np.array([int(np.sum(seg_dist(self.pos[opp], here, self.pos[m]) < pw["lane_m"]))
                          for m in mates])
         forcing = self.force_goal[team] >= 0
-        scores = 1.2 * openness + (1.6 if forcing else 1.0) * progress + 0.6 * fit - 0.8 * lane
+        scores = (pw["open"] * openness + (1.6 if forcing else pw["progress"]) * progress
+                  + pw["fit"] * fit - pw["lane"] * lane)
         scores[(dist < 4) | (dist > 50)] = -9
-        scores[[m == self.gk(team) for m in mates]] -= 1.2
+        scores[[m == self.gk(team) for m in mates]] -= pw["gk"]
+        scores[[m == self.last_from for m in mates]] -= pw["return"] * (1 - pressure)
         options = [("pass", m) for m in mates]
         all_scores = list(scores)
         gd = float(np.linalg.norm(self.goal(team) - here))
@@ -336,6 +344,7 @@ class Engine:
         def land(f_end):
             if success:
                 self.give(r, f_end)
+                self.last_from = c
             elif self.rng.random() < 0.45:
                 i = self.nearest(self.other(team), end)
                 spot = np.array([end[0], 0.5 if end[1] < 34 else 67.5])
@@ -410,7 +419,7 @@ class Engine:
             return
         self.last_tackle = f
         behind = (self.pos[defender][0] - self.pos[c][0]) * self.d(team) < 0
-        p_foul = 0.2 + 0.15 * (1 - self.a(defender, "discipline") / 100) + (0.1 if behind else 0)
+        p_foul = 0.12 + 0.15 * (1 - self.a(defender, "discipline") / 100) + (0.1 if behind else 0)
         if self.rng.random() < p_foul:
             reasons = ["from_behind"] if behind else [str(self.rng.choice(FOUL_REASONS))]
             self.emit(f, "foul", defender, start=self.xy(self.pos[c]), qualifiers=reasons)
@@ -432,6 +441,8 @@ class Engine:
         if self.natural_reds and self.rng.random() < 0.01:
             self.send_off(f, slot, ["serious_foul_play"])
         elif self.rng.random() < 0.10 + 0.15 * (1 - disc / 100):
+            if self.yellows.get(pid, 0) and not self.natural_reds:
+                return
             self.yellows[pid] = self.yellows.get(pid, 0) + 1
             if self.yellows[pid] >= 2 and self.natural_reds:
                 self.send_off(f, slot, ["second_yellow"])
@@ -550,14 +561,18 @@ class Engine:
                     back += 3.0
                 back = max(6.0, tac.line_height_m - 7, min(back, bd - 1.5))
                 length, width = tac.length_m, tac.width_m
-            dep = np.clip(back + slots[:, 0] * length, 3, 101)
+            last_line = None
             if in_poss:
                 opp = self.outfield(self.other(team))
                 if opp:
                     opp_depth = np.sort(self.depth(team, self.pos[opp, 0]))[::-1]
                     last_line = float(opp_depth[min(1, len(opp_depth) - 1)])
-                    fwd = slots[:, 0] >= 0.9
-                    dep[fwd] = np.minimum(dep[fwd], last_line - 0.5)
+                    top = max(float(slots[:, 0].max()), 0.5)
+                    length = min(length, max(SHAPE_MIN_LENGTH, (last_line - 0.5 - back) / top))
+            dep = np.clip(back + slots[:, 0] * length, 3, 101)
+            if last_line is not None:
+                fwd = slots[:, 0] >= 0.9
+                dep[fwd] = np.minimum(dep[fwd], last_line - 0.5)
             ys = np.clip(34 + (slots[:, 1] - 0.5) * width + 0.35 * (by - 34), 2, 66)
             tgt[outs, 0] = x0 + d * dep
             tgt[outs, 1] = ys
@@ -635,6 +650,7 @@ class Engine:
         self.ball = np.array([*CENTRE, 0.0])
         self.possession = kickoff_team
         self.carrier, self.flight, self.receiver = None, None, None
+        self.last_from = None
         self.dead_until, self.after_dead, self.kickoff_hold = -1, None, False
         self.next_action = 0
         self.done, self.stoppage_end = set(), None
