@@ -4,6 +4,7 @@
 # Needs Docker running locally and `az login` with rights on the resource group.
 # Usage: [SUFFIX=kr2610 RG=offball-rg LOC=westus2 CONTROL_PASSCODE=...] scripts/deploy_sim.sh [tag]
 set -euo pipefail
+export MSYS_NO_PATHCONV=1
 cd "$(dirname "$0")/.."
 
 TAG=${1:-$(git rev-parse --short HEAD)}
@@ -48,6 +49,7 @@ secrets, env = [], [
   {"name": "AZURE_CLIENT_ID", "value": "$ID_CLIENT"},
   {"name": "EVENTHUB_NAMESPACE", "value": "$EH.servicebus.windows.net"},
   {"name": "WARM_STORYLINE", "value": "red_card"},
+  {"name": "DEPLOYED_AT", "value": "$(date -u +%Y%m%dT%H%M%SZ)"},
 ]
 if os.environ.get("CONTROL_PASSCODE"):
     secrets.append({"name": "passcode", "value": os.environ["CONTROL_PASSCODE"]})
@@ -75,6 +77,6 @@ json.dump(body, open(sys.argv[1], "w"))
 EOF
 az rest --method put \
   --url "https://management.azure.com/subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.App/containerApps/$APP?api-version=2024-03-01" \
-  --body "@$BODY" --query "{name:name,state:properties.provisioningState}" -o tsv
+  --body "@$BODY" --query "{name:name,state:properties.provisioningState,revision:properties.latestRevisionName}" -o tsv
 FQDN=$(az containerapp show -g "$RG" -n "$APP" --query properties.configuration.ingress.fqdn -o tsv 2>/dev/null || true)
 echo "deployed $IMAGE${FQDN:+ at https://$FQDN}"
