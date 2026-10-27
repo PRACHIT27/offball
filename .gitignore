@@ -44,3 +44,4 @@ Thumbs.db
 
 # Browser test tool output
 .playwright-mcp/
+*.tsbuildinfo
