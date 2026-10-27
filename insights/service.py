@@ -15,7 +15,7 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from aiohttp import web
@@ -180,7 +180,7 @@ async def main() -> None:
         log.info("insights service up: stats lookback %s, triggers from now", STATS_LOOKBACK)
         async with stats, triggers:
             await asyncio.gather(
-                stats.receive(svc.on_stats, starting_position=datetime.now(timezone.utc)
+                stats.receive(svc.on_stats, starting_position=datetime.now(UTC)
                               - STATS_LOOKBACK),
                 # Only new triggers: a restart must not re-explain (and re-bill) old ones
                 triggers.receive(svc.on_trigger, starting_position="@latest"))

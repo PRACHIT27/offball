@@ -2,7 +2,8 @@ from insights import checker, facts, templates
 
 
 def _red_card_confirmed(data):
-    return facts.build(data.triggers[2], data)  # line 33.8 → 25.9, 3-5-2 → 4-4-1, possession 51 → 58
+    # line 33.8 → 25.9, 3-5-2 → 4-4-1, possession 51 → 58
+    return facts.build(data.triggers[2], data)
 
 
 def _check(text, f, key="analyst.en", tools=None):
@@ -121,7 +122,8 @@ def test_tool_results_and_check_ins_ground_claims(data):
     claim = "Northgate are pressing more now."
     assert not _check(claim, f).passed
     tools = [{"tool": "compare_periods",
-              "result": {"measures": {"pressing_per_min": {"a": 2.0, "b": 3.5, "difference": 1.5}}}}]
+              "result": {"measures": {"pressing_per_min": {"a": 2.0, "b": 3.5,
+                                                           "difference": 1.5}}}}]
     assert _check(claim, f, tools=tools).passed
     check_in = {"kind": "check_in", "teams": {"NGU": {"pressing_per_min": 3.5}},
                 "previous": {"NGU": {"pressing_per_min": 2.0}}}

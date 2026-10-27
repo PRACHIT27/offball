@@ -26,8 +26,8 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Install
-        # azure-functions: the ingestion Function App tests import it
-        run: pip install -e ".[dev,azure,control]" azure-functions
+        # azure-functions: the ingestion Function App tests import it; insights: Agent Framework
+        run: pip install -e ".[dev,azure,control,insights]" azure-functions
       - name: Lint
         run: ruff check .
       - name: Test

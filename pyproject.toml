@@ -44,3 +44,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# Whole caption sentences in English, Spanish and Hindi read better unbroken
+"insights/templates.py" = ["E501"]

@@ -86,7 +86,9 @@ class StatsAPI:
         ws = self.windows(team, from_min, to_min, as_of)
         if not ws:
             return {"team": self.team_id(team), "windows": 0, "note": "no data in that span"}
-        shape = lambda k: Counter(w["values"].get(k) for w in ws if w["values"].get(k))
+        def shape(k: str) -> Counter:
+            return Counter(w["values"].get(k) for w in ws if w["values"].get(k))
+
         out_of, in_pos = shape("formation_out"), shape("formation_in")
         return {"team": self.team_id(team), "from_minute": from_min, "to_minute": to_min,
                 "out_of_possession": out_of.most_common(1)[0][0] if out_of else None,
@@ -103,7 +105,8 @@ class StatsAPI:
             measures[k] = {"a": va, "b": vb,
                            "difference": round(vb - va, 2) if va is not None and vb is not None
                            else None}
-        fa, fb = self.formation(team, a_from, a_to, as_of), self.formation(team, b_from, b_to, as_of)
+        fa = self.formation(team, a_from, a_to, as_of)
+        fb = self.formation(team, b_from, b_to, as_of)
         measures["formation_out"] = {"a": fa.get("out_of_possession"),
                                      "b": fb.get("out_of_possession")}
         return {"team": self.team_id(team), "a": [a_from, a_to], "b": [b_from, b_to],

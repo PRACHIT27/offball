@@ -123,7 +123,8 @@ async def _agents(team: Team, f: dict, p: dict, run: RunContext, out: _Progress)
     insight = out.core or templates.core_text(f)
     out.captions = {k: v for k, v in (await _story(team, f, insight, findings)).items()
                     if k in KEYS and isinstance(v, str)}
-    reviewed: dict[str, list[str]] = {}  # safety verdict per caption text: rewrites re-check only changes
+    # Safety verdict per caption text: rewrites re-check only what changed
+    reviewed: dict[str, list[str]] = {}
     for attempt in range(MAX_REWRITES + 1):
         out.attempts = attempt + 1
         g = checker.Grounding(f, run.tool_results)
