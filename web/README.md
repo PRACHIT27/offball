@@ -45,7 +45,8 @@ Keys: space plays and pauses, ← → move 10 s. Links can open a moment:
 `{match_id}.metrics.json` sits next to each replay, written by `scripts/build_metrics_view.py`. It
 is optional: the screen works without it. It adds:
 - **Pitch:** the ball carrier's pressure from metrics (a dashed ring at ≥ 0.75, and the value in
-  analyst view); shot-speed and distance-milestone badges.
+  analyst view); shot-speed and distance-milestone badges; ball speed by the ball while it travels
+  (analyst view); open options in each pass arc's label.
 - **Side panel:** a shot map (dot size = xG, filled = goal), and passing per team (accuracy, the
   pass model's expected accuracy, average difficulty).
 - **Player card:** a 21 × 14 heatmap, for the whole match or the last 15 minutes.
