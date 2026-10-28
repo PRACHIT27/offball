@@ -1,13 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CaptionBar } from "./components/CaptionBar";
-import { Pitch } from "./components/Pitch";
+import { FourWays } from "./components/FourWays";
+import { Pitch, TEAM_COLOUR } from "./components/Pitch";
 import { SidePanel } from "./components/SidePanel";
 import { moments, Timeline } from "./components/Timeline";
 import { TopBar } from "./components/TopBar";
-import { snapshotAt } from "./replay";
-import type { Language, MatchListing, MetricsView, Replay, ViewerType } from "./types";
+import { captionVoice, lastIndex, snapshotAt } from "./replay";
+import type { Language, MatchListing, MetricsView, Replay, Side, ViewerType } from "./types";
 
 const BASE = `${import.meta.env.BASE_URL}replays/`;
+const VIEWER_TYPES: ViewerType[] = ["casual", "analyst", "supporter", "player"];
+
+/** Who the player-focus view follows when nobody is picked: the latest goal, card or sub. */
+function featuredPlayer(r: Replay, t: number): string | null {
+  for (let i = lastIndex(r.events, t, (e) => e.t); i >= 0; i--) {
+    const e = r.events[i];
+    if (e.player && (e.type === "card" || e.type === "sub_on"
+        || (e.type === "shot" && e.outcome === "goal"))) return e.player;
+  }
+  return r.order.find((pid) => r.players[pid]?.position !== "GK") ?? null;
+}
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -37,8 +49,13 @@ export default function App() {
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
-  const [viewer, setViewer] = useState<ViewerType>(
-    (params.get("type") as ViewerType) || load<ViewerType>("offball.viewer", "casual"));
+  const [viewer, setViewer] = useState<ViewerType>(() => {
+    const v = (params.get("type") as ViewerType) || load<ViewerType>("offball.viewer", "casual");
+    return VIEWER_TYPES.includes(v) ? v : "casual";
+  });
+  const [club, setClub] = useState<Side>(
+    (params.get("club") as Side) || load<Side>("offball.club", "home"));
+  const [fourWays, setFourWays] = useState(params.get("view") === "four");
   const [lang, setLang] = useState<Language>(
     (params.get("lang") as Language) || load<Language>("offball.lang", "en"));
   const [focus, setFocus] = useState<string | null>(null);
@@ -68,6 +85,7 @@ export default function App() {
   }, [matchId]);
 
   useEffect(() => save("offball.viewer", viewer), [viewer]);
+  useEffect(() => save("offball.club", club), [club]);
   useEffect(() => save("offball.lang", lang), [lang]);
 
   // Match clock: advances at the viewer's speed, one React render per animation frame
@@ -112,20 +130,38 @@ export default function App() {
     if (m) seek(m.t - 3000);
   };
 
+  const pick = (pid: string) => setFocus((f) => (f === pid ? null : pid));
+  // Player focus follows the picked player, or the latest goal, card or sub until one is picked
+  const followed = viewer === "player" ? focus ?? featuredPlayer(replay, t) : focus;
+  const accent = viewer === "supporter" ? TEAM_COLOUR[club] : undefined;
+
   return (
-    <div className={`app viewer-${viewer}`}>
+    <div className={`app viewer-${viewer}${fourWays ? " four" : ""}`}>
       <TopBar replay={replay} matches={matches} t={t} period={snap?.period ?? 1}
               clock={snap?.clock ?? 0} playing={playing} speed={speed} viewer={viewer}
-              lang={lang} onMatch={(id) => setMatchId(id)} onPlay={() => setPlaying((p) => !p)}
-              onSpeed={setSpeed} onViewer={setViewer} onLang={setLang} onNextMoment={next} />
-      <main className="stage">
-        <div className="pitch-wrap">
-          <Pitch replay={replay} metrics={metrics} t={t} viewer={viewer} focus={focus}
-                 onPickPlayer={(pid) => setFocus((f) => (f === pid ? null : pid))} />
-          <CaptionBar replay={replay} t={t} viewer={viewer} lang={lang} />
-        </div>
-        {(viewer === "analyst" || focus) && <SidePanel replay={replay} metrics={metrics} t={t} focus={focus} />}
-      </main>
+              club={club} fourWays={fourWays} lang={lang}
+              onMatch={(id) => setMatchId(id)} onPlay={() => setPlaying((p) => !p)}
+              onSpeed={setSpeed} onViewer={setViewer} onClub={setClub} onFourWays={setFourWays}
+              onLang={setLang} onNextMoment={next} />
+      {fourWays ? (
+        <main className="stage">
+          <FourWays replay={replay} metrics={metrics} t={t} lang={lang} club={club}
+                    featured={focus ?? featuredPlayer(replay, t)} onPickPlayer={pick} />
+        </main>
+      ) : (
+        <main className="stage">
+          <div className="pitch-wrap">
+            <Pitch replay={replay} metrics={metrics} t={t}
+                   viewer={viewer === "analyst" ? "analyst" : "casual"} focus={followed}
+                   onPickPlayer={pick} />
+            <CaptionBar replay={replay} t={t} voice={captionVoice(viewer, club)} lang={lang}
+                        accent={accent} />
+          </div>
+          {(viewer === "analyst" || followed) && (
+            <SidePanel replay={replay} metrics={metrics} t={t} focus={followed} />
+          )}
+        </main>
+      )}
       <Timeline replay={replay} t={t} onSeek={seek} />
     </div>
   );

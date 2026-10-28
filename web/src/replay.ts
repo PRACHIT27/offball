@@ -1,5 +1,5 @@
 // Reading a replay at any moment t (ms of play since kick-off, continuous across halves).
-import type { Cue, Language, Replay, Side, TacticsItem, ViewerType } from "./types";
+import type { CaptionVoice, Cue, Language, Replay, Side, TacticsItem, ViewerType } from "./types";
 
 export interface Snapshot {
   period: number;
@@ -152,7 +152,14 @@ const INSIGHT_TONE: Record<string, Caption["tone"]> = {
 };
 
 /** Captions written from the numbers alone (caption_source "template"); agents add theirs later. */
-export function captionAt(r: Replay, t: number, viewer: ViewerType = "casual",
+/** Which caption set a viewer type reads; player focus reads the casual captions. */
+export function captionVoice(viewer: ViewerType, club: Side): CaptionVoice {
+  if (viewer === "analyst") return "analyst";
+  if (viewer === "supporter") return club === "home" ? "supporter_home" : "supporter_away";
+  return "casual";
+}
+
+export function captionAt(r: Replay, t: number, viewer: CaptionVoice = "casual",
                           lang: Language = "en"): Caption | null {
   let best: Caption | null = null;
   const consider = (c: Caption, hold: number, rank: number) => {

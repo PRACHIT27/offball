@@ -1,5 +1,5 @@
 import { captionAt } from "../replay";
-import type { Language, Replay, ViewerType } from "../types";
+import type { CaptionVoice, Language, Replay } from "../types";
 
 const ORIGIN = {
   agent: ["AI", "Written by the agent team and checked against the numbers"],
@@ -7,11 +7,12 @@ const ORIGIN = {
   auto: ["auto", "Written from the numbers by the screen"],
 } as const;
 
-export function CaptionBar({ replay, t, viewer, lang }:
-  { replay: Replay; t: number; viewer: ViewerType; lang: Language }) {
-  const c = captionAt(replay, t, viewer, lang);
+export function CaptionBar({ replay, t, voice, lang, accent }:
+  { replay: Replay; t: number; voice: CaptionVoice; lang: Language; accent?: string }) {
+  const c = captionAt(replay, t, voice, lang);
   return (
-    <div className={`caption ${c ? `tone-${c.tone}` : "idle"}`} aria-live="polite">
+    <div className={`caption ${c ? `tone-${c.tone}` : "idle"}`} aria-live="polite"
+         style={accent ? { borderLeftColor: accent } : undefined}>
       {c ? (
         <>
           <span className="caption-text" key={c.source} lang={lang}>{c.text}</span>

@@ -15,6 +15,11 @@ LAST = ["Ashby", "Brook", "Calder", "Dunmore", "Ellery", "Fenwick", "Garrow", "H
         "Jessop", "Kerridge", "Lowther", "Marlow", "Norland", "Oakes", "Pellow", "Quarry",
         "Rowan", "Selby", "Thorne", "Upton", "Varley", "Wexford", "Yardley", "Arkwright",
         "Blythe", "Corwen", "Dacre", "Eskdale", "Farrant"]
+SPARE_LAST = ["Alder", "Brackley", "Coniston", "Dalby", "Embleton", "Felling", "Grisedale",
+              "Hawes", "Keld", "Langdale", "Mardale", "Nenthead", "Ormside", "Patterdale",
+              "Ravenglass", "Sedbergh", "Thirlby", "Wasdale", "Yarrow", "Allendale", "Bewley",
+              "Cawood", "Dentdale", "Eamont", "Fellside", "Glaisdale", "Hartside", "Kirkby",
+              "Lorton", "Mosedale"]
 ABILITY_PROFILES = {
     "GK": {"goalkeeping": 80, "passing": 55, "pace": 50, "tackling": 30, "dribbling": 30},
     "CB": {"tackling": 76, "passing": 62, "pace": 66, "dribbling": 50, "finishing": 35},
@@ -114,6 +119,21 @@ CLUBS: dict[str, Club] = {
                               "delay_s": 60}},
         0.7)),
 }
+
+
+def _unique_surnames(clubs: dict[str, Club]) -> None:
+    used: set[str] = set()
+    spare = iter(SPARE_LAST)
+    for club in clubs.values():
+        for p in club.players:
+            first, last = p["name"].split(" ", 1)
+            if last in used:
+                last = next(s for s in spare if s not in used)
+                p["name"] = f"{first} {last}"
+            used.add(last)
+
+
+_unique_surnames(CLUBS)
 
 
 def history(club: Club, rng: np.random.Generator) -> dict:

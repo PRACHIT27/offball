@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.10.0`**
+**Doc set version: `v2.11.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -36,7 +36,7 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 
 ## Log
 
-## v2.10.0 · 2026-10-27 · Archit
+## v2.11.0 · 2026-10-27 · Archit
 **Files:** README.md, VERSION.md (also `docs/submission.md`, `.devcontainer/devcontainer.json`)
 **Type:** MINOR
 - `docs/submission.md` is new. It holds:
@@ -49,6 +49,22 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
   - fill the Copilot / Azure MCP Server section in `docs/submission.md` with what you really did;
   - review the pitch;
   - add the video link when it's recorded.
+
+## v2.10.0 · 2026-10-27 · Prachit
+**Files:** VERSION.md (code: `sim/engine.py`, `sim/clubs.py`)
+**Type:** MINOR
+- More realistic play in the simulator:
+  - **Shape:** with the ball, the whole team now stays under the opponent's offside line. Before, midfielders ended up ahead of their own strikers, so most of their passes went backward.
+  - **No ping-pong:** a player is less likely to pass straight back to whoever just passed to them (under pressure they still can). Return passes fell from 31% to about 9–16%.
+  - Result on the six storylines: about 23–26% of passes go backward (was 59%), sequences average 4–5 passes (was 6.5), 15–23 shots and 13–29 fouls per match.
+  - **Cards:** scripted storylines no longer get unscripted red cards, and a booked player isn't booked again unless natural reds are on.
+  - **Names:** every player has a unique surname (was 30 surnames for 54 players). Same random draws, so squads and abilities are unchanged.
+- Scores, scripted cards and every tactic change land at the same minutes as before, but the matches themselves are new.
+- **Action required:**
+  - Lane 1: regenerate `local_feeds/` and rerun `scripts/results.py`, since old answer keys don't match new matches.
+  - Lane 3: rebuild the replays and metrics views (`scripts/build_replay.py`, `scripts/build_metrics_view.py`).
+  - Lane 2: rerun the agent captions on the new replays (`python -m insights.local … --agents --replay …`).
+  - Platform: redeploy match control (`scripts/deploy_sim.sh`).
 
 ## v2.9.0 · 2026-10-27 · Kanika
 **Files:** CLAUDE.md, VERSION.md (code: `insights/service.py`, `insights/live.html`, `Dockerfile.insights`, `scripts/deploy_insights.sh`)
