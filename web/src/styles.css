@@ -142,3 +142,13 @@ button, select { font: inherit; color: inherit; }
 .heat-block { margin-top: 10px; }
 .seg.small button { padding: 3px 8px; font-size: 12px; background: var(--panel-2); border: 1px solid var(--border); cursor: pointer; }
 .seg.small button.on { background: var(--pitch); border-color: var(--pitch-line); }
+
+/* Four ways: the same moment for four viewer types (Audience LLD §5) */
+.four-ways { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-height: 0; }
+.four-tile { display: flex; flex-direction: column; gap: 6px; min-width: 0; min-height: 0; }
+.four-tile h3 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 16px; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
+.four-tile .pitch { max-height: calc((100vh - 300px) / 2); }
+.four-tile .caption { min-height: 40px; padding: 6px 10px; }
+.four-tile .caption-text { font-size: 14px; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+@media (max-width: 860px) { .four-ways { grid-template-columns: 1fr; } .four-tile .pitch { max-height: none; } }

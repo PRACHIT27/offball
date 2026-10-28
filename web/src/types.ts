@@ -105,7 +105,10 @@ export interface MatchListing {
   title: string;
 }
 
-export type ViewerType = "casual" | "analyst";
+export type ViewerType = "casual" | "analyst" | "supporter" | "player";
+
+/** The caption set a viewer reads (`{voice}.{language}` keys in Insight Generation captions). */
+export type CaptionVoice = "casual" | "analyst" | "supporter_home" | "supporter_away";
 
 /** Performance Metrics side file (`{match_id}.metrics.json`, scripts/build_metrics_view.py). */
 export interface MetricsView {
