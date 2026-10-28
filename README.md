@@ -6,9 +6,28 @@
 
 ![OffBall high-level architecture](docs/design/diagrams/architecture.svg)
 
-**Live viewer screen:** https://jolly-cliff-0ccede51e.4.azurestaticapps.net (recorded matches; e.g. [the 70' red card](https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4300&type=analyst))
+## Try it (judges, start here)
 
-**Judges, start here:** [docs/submission.md](docs/submission.md) has the pitch, how to try it (no login), results numbers, the Microsoft technology used and honesty notes. To run it yourself, open the repo in **GitHub Codespaces** (`.devcontainer/`); local mode needs no Azure.
+No sign-in needed except where noted. All clubs, players and matches are fictional and synthetic.
+
+| What | Link |
+|---|---|
+| **Viewer screen** (recorded matches) | https://jolly-cliff-0ccede51e.4.azurestaticapps.net |
+| The 70' red card, analyst view | [open](https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4300&type=analyst&lang=en) |
+| Before/after board after the red card (74') | [open](https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4560&type=analyst&lang=en) |
+| The same moment, four ways | [open](https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4302&view=four&club=home&lang=en) |
+| **Match control:** start a new match through the live Azure pipeline | https://offball-sim.whitemoss-2f18829c.westus2.azurecontainerapps.io |
+| **Producer console:** pull any cue off air during a live match | https://offball-cues.whitemoss-2f18829c.westus2.azurecontainerapps.io/producer |
+
+**1. Watch a recorded match.** Open the viewer, pick a match (Red Card, Comeback, Switch), press ▶, change speed or press **Next moment** (Space plays/pauses, ← → move 10 s). Try the viewer types (**Casual**, **Analyst**, **Supporter**, **Player**: tap any player, **Four ways**) and switch captions between **EN / ES / HI**.
+
+**2. Run a live match.** Open match control, pick a storyline, choose a speed and press **Play**. The first Play after a quiet spell wakes the live services, so allow about two minutes. Once it streams, the match appears as **LIVE** in the viewer's match picker, and players, cues and agent captions arrive as the engine computes them. One match plays at a time.
+
+**3. Pull a cue.** During a live match, open the producer console and press **Pull** on any cue; it disappears from every screen. The producer passcode is in our submission form.
+
+**4. Fabric Real-Time Dashboard.** It needs a sign-in to our Fabric tenant, so it's shown in the demo video.
+
+**More detail:** [docs/submission.md](docs/submission.md) has the pitch, how to try it (no login), results numbers, the Microsoft technology used and honesty notes. To run it yourself, open the repo in **GitHub Codespaces** (`.devcontainer/`); local mode needs no Azure.
 
 **Team:** 3 · **Submission deadline:** **Tue Oct 27, 2026, 11:59 pm PT** (Wed Oct 28, 2:59 am ET) · **Winners announced:** by Nov 20
 
