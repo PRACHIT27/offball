@@ -192,8 +192,10 @@ Output folders: `feeds/` (feed_a.jsonl, feed_b.jsonl), `answer-keys/` (answer_ke
 
 ## Lane 2: Insight Generation
 
-`insights/` turns each Tactical Intelligence trigger into an insight with 12 captions (analyst,
-casual, supporter_home, supporter_away × en, es, hi), per [lld-insight-generation.md](docs/design/lld-insight-generation.md).
+`insights/` turns each Tactical Intelligence trigger into an insight with 15 captions (analyst,
+casual, supporter_home, supporter_away, player × en, es, hi), per [lld-insight-generation.md](docs/design/lld-insight-generation.md).
+Each caption is two or three sentences: what changed, what it means, and an off-the-ball detail
+(decoy runs, free men not found, work rate, passing) from Performance Metrics' cues and totals.
 Every number in a caption comes from the trigger's facts (`insights/facts.py`) or an MCP tool result.
 
 Agent team (`insights/agents.py`, `insights/workflow.py`, prompts in `insights/prompts/`): coordinator

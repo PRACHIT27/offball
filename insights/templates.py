@@ -5,7 +5,7 @@ Foundry (IG-31). Twelve captions per insight: 4 viewer types × en, es, hi (LLD 
 
 import re
 
-VIEWER_TYPES = ("analyst", "casual", "supporter_home", "supporter_away")
+VIEWER_TYPES = ("analyst", "casual", "supporter_home", "supporter_away", "player")
 LANGUAGES = ("en", "es", "hi")
 
 LABEL = {
@@ -131,10 +131,11 @@ def _confirmed(f: dict) -> dict:
     crux = f.get("crux_reason") or ""
     for lang in LANGUAGES:
         cname = CRUX_NAME[lang].get(crux, crux)
-        since = {"en": f"Since the {cname} ({f.get('crux_minute', '')})",
-                 "es": f"Desde la {cname} ({f.get('crux_minute', '')})" if crux in ("red_card", "yellow_card")
-                 else f"Desde el {cname} ({f.get('crux_minute', '')})",
-                 "hi": f"{cname} ({f.get('crux_minute', '')}) के बाद से"}[lang]
+        at = f" ({f['crux_minute']})" if f.get("crux_minute") else ""
+        since = {"en": f"Since the {cname}{at}",
+                 "es": f"Desde la {cname}{at}" if crux in ("red_card", "yellow_card")
+                 else f"Desde el {cname}{at}",
+                 "hi": f"{cname}{at} के बाद से"}[lang]
         if f["kind"] == "confirmed":
             first = f["changes"][0]
             casual = f"{since}: {_change_text(first, team, lang, False)}."
@@ -164,6 +165,8 @@ def _shift(f: dict) -> dict:
             casual = {"en": f"{who} takes up a new position for {team}.",
                       "es": f"{who} ocupa una nueva posición en {team}.",
                       "hi": f"{who} ने {team} के लिए नई पोज़ीशन ली।"}[lang]
+            if lang == "en" and c.get("from_zone") and c.get("to_zone"):
+                casual = f"{who} moves from {c['from_zone']} to {c['to_zone']} for {team}."
             analyst = casual
         elif c:
             casual = _change_text(c, team, lang, False) + "."
@@ -245,7 +248,7 @@ WRITERS = {"expect": _expect, "confirmed": _confirmed, "retracted": _confirmed, 
 
 
 def captions(f: dict) -> dict[str, str]:
-    """{viewer_type}.{language} → caption, 12 in all."""
+    """{viewer_type}.{language} → caption, 15 in all."""
     by_lang = WRITERS[f["kind"]](f)
     # Whose moment it is: the scorer for a goal, otherwise the trigger's team
     subject = (f.get("event") or {}).get("team") or f.get("team")
@@ -254,6 +257,7 @@ def captions(f: dict) -> dict[str, str]:
         base = by_lang[lang]
         out[f"analyst.{lang}"] = base["analyst"]
         out[f"casual.{lang}"] = base["casual"]
+        out[f"player.{lang}"] = base.get("player", base["casual"])
         for side in ("home", "away"):
             text = base["casual"]
             if subject and subject != f[side]:

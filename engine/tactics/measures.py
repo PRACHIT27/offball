@@ -29,14 +29,30 @@ def _round(v, nd=2):
     return None if v is None else round(float(v), nd)
 
 
+LINE_SIZES = ((3, 5), (2, 6), (1, 3))
+MIDFIELD_BALL_M = (30.0, 75.0)
+
+
 def lines_formation(depths: np.ndarray) -> str | None:
     d = np.sort(depths[~np.isnan(depths)])
-    if len(d) < 6:
+    n = len(d)
+    if n < 6:
         return None
     gaps = np.diff(d)
-    cuts = np.sort(np.argsort(gaps[1:-1])[-2:] + 1)
-    sizes = np.diff(np.concatenate([[0], cuts + 1, [len(d)]]))
-    return "-".join(str(int(s)) for s in sizes)
+    best = None
+    for i in range(n - 2):
+        for j in range(i + 1, n - 1):
+            sizes = (i + 1, j - i, n - j - 1)
+            if all(lo <= k <= hi for k, (lo, hi) in zip(sizes, LINE_SIZES, strict=True)):
+                score = gaps[i] + gaps[j]
+                if best is None or score > best[0]:
+                    best = (score, sizes)
+    if best is None:
+        cuts = np.sort(np.argsort(gaps[1:-1])[-2:] + 1)
+        sizes = tuple(np.diff(np.concatenate([[0], cuts + 1, [n]])))
+    else:
+        sizes = best[1]
+    return "-".join(str(int(k)) for k in sizes)
 
 
 class WindowCalc:
@@ -57,11 +73,20 @@ class WindowCalc:
         self.poss = win["poss"]
         self.oop = self.poss == self.opp
         self.inp = self.poss == team
+        lo, hi = MIDFIELD_BALL_M
+        mid = (self.bdep >= lo) & (self.bdep <= hi)
+        self.oop_mid = self._midfield(self.oop, mid)
+        self.inp_mid = self._midfield(self.inp, mid)
         self.events = state.period_events(period, t0, t1)
         self.minutes = max((t1 - t0) / 60000, 1e-6)
 
+    @staticmethod
+    def _midfield(frames: np.ndarray, mid: np.ndarray) -> np.ndarray:
+        both = frames & mid
+        return both if both.sum() >= 0.3 * frames.sum() else frames
+
     def line_height(self) -> tuple[float | None, np.ndarray]:
-        d = self.dep[self.oop]
+        d = self.dep[self.oop_mid]
         if not len(d):
             return None, np.array([])
         with warnings.catch_warnings():
@@ -71,7 +96,7 @@ class WindowCalc:
         return _nanmedian(per), per
 
     def compactness(self) -> tuple[float | None, float | None]:
-        d, y = self.dep[self.oop], self.y[self.oop]
+        d, y = self.dep[self.oop_mid], self.y[self.oop_mid]
         if not len(d):
             return None, None
         with warnings.catch_warnings():
@@ -83,10 +108,10 @@ class WindowCalc:
     def formations(self) -> tuple[str | None, str | None]:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
-            out = (lines_formation(np.nanmean(self.dep[self.oop], axis=0))
-                   if self.oop.any() else None)
-            inn = (lines_formation(np.nanmean(self.dep[self.inp], axis=0))
-                   if self.inp.any() else None)
+            out = (lines_formation(np.nanmean(self.dep[self.oop_mid], axis=0))
+                   if self.oop_mid.any() else None)
+            inn = (lines_formation(np.nanmean(self.dep[self.inp_mid], axis=0))
+                   if self.inp_mid.any() else None)
         return out, inn
 
     def pressing(self) -> dict:

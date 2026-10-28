@@ -7,7 +7,7 @@ from insights.local import template_insight
 def test_twelve_captions_for_every_trigger(data):
     for t in data.triggers:
         caps = template_insight(t, data).captions
-        assert len(caps) == 12, t["trigger_id"]
+        assert len(caps) == 15, t["trigger_id"]
         assert all(caps.values()), t["trigger_id"]
 
 

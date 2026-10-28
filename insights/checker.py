@@ -6,7 +6,9 @@ difference. Content Safety and the Translator back-check plug in on top (insight
 import re
 from dataclasses import dataclass, field
 
-WORD_LIMIT = {"analyst": 30, "casual": 18, "supporter_home": 22, "supporter_away": 22}
+# The prompts ask for 50 / 30 / 35 words; these leave room for names and numbers
+WORD_LIMIT = {"analyst": 70, "casual": 42, "supporter_home": 48, "supporter_away": 48,
+              "player": 48}
 
 # Number words a model may write instead of digits ("thirty-four"). "one"/"uno"/"una"/"एक" are
 # left out: they are mostly articles ("one change", "una línea").

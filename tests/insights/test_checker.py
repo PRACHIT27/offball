@@ -74,7 +74,7 @@ def test_tool_results_ground_numbers(data):
 
 def test_word_limit(data):
     f = _red_card_confirmed(data)
-    long = "Northgate dropped deeper " + "and kept going " * 6
+    long = "Northgate dropped deeper " + "and kept going " * 15
     assert not _check(long, f, "casual.en").passed
 
 

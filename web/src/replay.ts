@@ -152,10 +152,11 @@ const INSIGHT_TONE: Record<string, Caption["tone"]> = {
 };
 
 /** Captions written from the numbers alone (caption_source "template"); agents add theirs later. */
-/** Which caption set a viewer type reads; player focus reads the casual captions. */
+/** Which caption set a viewer type reads. */
 export function captionVoice(viewer: ViewerType, club: Side): CaptionVoice {
   if (viewer === "analyst") return "analyst";
   if (viewer === "supporter") return club === "home" ? "supporter_home" : "supporter_away";
+  if (viewer === "player") return "player";
   return "casual";
 }
 
@@ -171,6 +172,8 @@ function headline(e: Replay["events"][number]): "goal" | "card" | null {
 
 // Insights for the same moment take turns: each gets at least this long before the next one
 const INSIGHT_TURN_MS = 6_000;
+// Two or three sentences need time to read
+const INSIGHT_HOLD_MS = 16_000;
 const schedules = new WeakMap<object, { events: number; starts: Map<string, number> }>();
 
 /** When each insight starts on screen: after any goal or card caption it lands inside, and
@@ -222,11 +225,12 @@ export function captionAt(r: Replay, t: number, viewer: CaptionVoice = "casual",
   const starts = insightStarts(r);
   for (let i = lastIndex(insights, t, (x) => x.t); i >= 0 && t - insights[i].t < 30_000; i--) {
     const x = insights[i];
-    const text = x.captions[`${viewer}.${lang}`] ?? x.captions[`${viewer}.en`];
+    const text = x.captions[`${viewer}.${lang}`] ?? x.captions[`${viewer}.en`]
+      ?? x.captions[`casual.${lang}`];
     if (!text) continue;
     const rank = x.evidence.event_ids.length && x.kind === "expect" ? 3.5 : 2.5;
     consider({ t: starts.get(x.insight_id) ?? x.t, tone: INSIGHT_TONE[x.kind] ?? "info", source: x.insight_id, text,
-               origin: x.caption_source }, 10_000, rank);
+               origin: x.caption_source }, INSIGHT_HOLD_MS, rank);
   }
   for (let i = lastIndex(r.events, t, (e) => e.t); i >= 0 && t - r.events[i].t < 12_000; i--) {
     const e = r.events[i];

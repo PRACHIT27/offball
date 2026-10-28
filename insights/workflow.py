@@ -15,7 +15,8 @@ from insights.agents import FAST, RUN, RunContext, Team
 from insights.data import MatchData
 from insights.models import Checker, Insight
 
-DEADLINE_S = {"expect": 8.0, "default": 20.0}  # IG-30
+# IG-30: the LLD says 8 s and 20 s; five voices in three languages need longer
+DEADLINE_S = {"expect": 20.0, "default": 45.0}
 MAX_REWRITES = 2
 KEYS = [f"{v}.{lang}" for lang in templates.LANGUAGES for v in templates.VIEWER_TYPES]
 

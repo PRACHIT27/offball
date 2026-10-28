@@ -85,6 +85,9 @@ def main() -> None:
     else:
         data = collect(args.feeds, args.match)
         data.save(data_dir)
+    if args.replay and args.replay.exists():
+        rep = json.loads(args.replay.read_text(encoding="utf-8"))
+        data.add_metrics(rep.get("cues", []), rep.get("totals", []))
     if args.agents:
         insights = asyncio.run(agent_insights(data, data_dir, args.concurrency))
     else:
@@ -98,9 +101,10 @@ def main() -> None:
     if args.agents:
         lat = sorted(i.latency_ms for i in insights)
         agent = sum(i.caption_source == "agent" for i in insights)
-        caps = sum(12 - len(i.checker.template_keys) for i in insights)
+        n = len(insights[0].captions) if insights else 15
+        caps = sum(n - len(i.checker.template_keys) for i in insights)
         first_try = sum(i.checker.attempts == 1 and i.checker.passed for i in insights)
-        print(f"agent insights: {agent}/{len(insights)}; agent captions {caps}/{12 * len(insights)}"
+        print(f"agent insights: {agent}/{len(insights)}; agent captions {caps}/{n * len(insights)}"
               f"; first-try pass {first_try}"
               f"; latency median {lat[len(lat) // 2] / 1000:.1f} s, worst {lat[-1] / 1000:.1f} s")
     else:

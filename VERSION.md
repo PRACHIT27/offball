@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.16.1`**
+**Doc set version: `v2.17.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,17 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.17.0 · 2026-10-28 · Prachit
+**Files:** CLAUDE.md, VERSION.md (code: `insights/`, `engine/tactics/measures.py`, `web/src/replay.ts`, `web/src/types.ts`, replays)
+**Type:** MINOR
+- **Richer insights:** every caption is two or three sentences: what changed, what it means (who it helps, what to watch), then an off-the-ball detail.
+  - Five voices that each take their own angle and stats: analyst, casual, supporter home, supporter away, and the new **player** voice (the individual, off-the-ball angle). Player mode in the viewer reads it; older replays fall back to casual.
+  - New facts (`insights/facts.py`): team length, long balls, control, xG against, field tilt, score situation, plain-word meanings, player moves in words, and `off_ball` from Performance Metrics' cues and totals (decoy runs and who they freed, free men not found, ground covered and sprints in the last 5 minutes, passing, biggest threat).
+  - Word limits: analyst 70, casual 42, supporters and player 48 (prompts ask for 50 / 30 / 35). Deadlines: expect 20 s, others 45 s. Captions stay on screen 16 s.
+  - Recorded matches: run with `--concurrency 1`; longer prompts hit the 100K TPM limit at 3.
+- **Tactical Intelligence:** line height, team length and shape are measured with the ball in midfield, and shapes must be realistic (3–5 defenders, 2–6 midfielders, 1–3 forwards). On the six storylines: false alarms 99 → 80, changes found 14 → 11 of 37.
+- **Not live yet:** the live captions service gets the new prompts and voices, but not `off_ball`; it doesn't collect metrics cues from the `stats` hub yet.
 
 ## v2.16.1 · 2026-10-27 · Prachit
 **Files:** README.md, VERSION.md

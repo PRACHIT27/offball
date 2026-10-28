@@ -33,6 +33,9 @@ class MatchData:
     windows: list[dict] = field(default_factory=list)
     notes: list[dict] = field(default_factory=list)
     triggers: list[dict] = field(default_factory=list)
+    # Performance Metrics outputs (off-ball cues and player totals), timed by play_ms
+    cues: list[dict] = field(default_factory=list)
+    totals: list[dict] = field(default_factory=list)
 
     # ---------- building ----------
 
@@ -73,6 +76,12 @@ class MatchData:
         d.events = {e["event_id"]: e for e in rows("events")}
         d.windows, d.notes, d.triggers = rows("windows"), rows("notes"), rows("triggers")
         return d
+
+    OFF_BALL_CUES = ("decoy_run", "best_option", "speed_alert", "distance_milestone")
+
+    def add_metrics(self, cues: list[dict], totals: list[dict]) -> None:
+        self.cues = [c for c in cues if c.get("kind") in self.OFF_BALL_CUES]
+        self.totals = sorted(totals, key=lambda x: x["t"])
 
     # ---------- lookups ----------
 
