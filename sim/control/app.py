@@ -76,6 +76,8 @@ def storylines() -> dict:
 def status() -> dict:
     s = runner.snapshot()
     s["pipeline"] = runner.pipeline.state if runner.pipeline else "off"
+    # Where the match is watched (the viewer screen); unset locally
+    s["viewer_url"] = os.environ.get("VIEWER_URL", "").rstrip("/") or None
     for side in ("home", "away"):
         if s[side] in CLUBS:
             s[f"{side}_name"] = CLUBS[s[side]].name

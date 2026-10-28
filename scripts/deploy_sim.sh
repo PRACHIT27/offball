@@ -80,6 +80,7 @@ secrets, env = [], [
   {"name": "PIPELINE_APPS", "value": "$PIPELINE_APPS"},
   {"name": "PIPELINE_HEALTH_URLS", "value": "https://offball-insights.whitemoss-2f18829c.westus2.azurecontainerapps.io/health,https://offball-cues.whitemoss-2f18829c.westus2.azurecontainerapps.io/health"},
   {"name": "IDLE_MINUTES", "value": "$IDLE_MINUTES"},
+  {"name": "VIEWER_URL", "value": "${VIEWER_URL:-https://jolly-cliff-0ccede51e.4.azurestaticapps.net}"},
   {"name": "AZ_SUBSCRIPTION", "value": "$(az account show --query id -o tsv)"},
   {"name": "AZ_RESOURCE_GROUP", "value": "$RG"},
   {"name": "DEPLOYED_AT", "value": "$(date -u +%Y%m%dT%H%M%SZ)"},
