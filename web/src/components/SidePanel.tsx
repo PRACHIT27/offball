@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { heatAt, passingAt } from "../metrics";
 import { lastIndex, latestWindow, surname } from "../replay";
-import type { MetricsView, Replay } from "../types";
+import type { MetricsView, Replay, Side, ViewerType } from "../types";
 import { TimeChart } from "./charts";
+import { CasualStats, PlayerOffBall, SupporterStats } from "./ModeStats";
 import { TEAM_COLOUR } from "./Pitch";
 import { BeforeAfter, ControlAndPressing, PassingNetwork } from "./TacticsPanels";
 
@@ -83,7 +84,9 @@ function Heatmap({ grid }: { grid: number[][] }) {
   );
 }
 
-export function SidePanel({ replay: r, metrics, t, focus }: { replay: Replay; metrics: MetricsView | null; t: number; focus: string | null }) {
+export function SidePanel({ replay: r, metrics, t, focus, mode = "analyst", club = "home" }:
+  { replay: Replay; metrics: MetricsView | null; t: number; focus: string | null;
+    mode?: ViewerType; club?: Side }) {
   const [heatSpan, setHeatSpan] = useState<"match" | "last_15">("match");
   const total = Math.max(t, MIN_SPAN_MS);
   const sides = ["home", "away"] as const;
@@ -148,6 +151,11 @@ export function SidePanel({ replay: r, metrics, t, focus }: { replay: Replay; me
           })()}
         </section>
       )}
+      {focus && mode === "player" && <PlayerOffBall replay={r} t={t} pid={focus} />}
+      {mode === "casual" && <CasualStats replay={r} t={t} />}
+      {mode === "supporter" && <SupporterStats replay={r} t={t} club={club} />}
+      {mode === "supporter" && <TimeChart title="xG race" unit="xg" series={xgPts} tEnd={t} total={total} />}
+      {mode === "analyst" && <>
       <BeforeAfter replay={r} t={t} />
       <TimeChart title="xG race" unit="xg" series={xgPts} tEnd={t} total={total} />
       <p className="chart-note">
@@ -177,6 +185,7 @@ export function SidePanel({ replay: r, metrics, t, focus }: { replay: Replay; me
           ))}</ol>
         </div>
       </section>
+      </>}
     </aside>
   );
 }

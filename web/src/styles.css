@@ -174,3 +174,9 @@ button, select { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) { .go-live i { animation: none; } }
 .start-live { font-size: 13px; color: var(--muted); text-decoration: none; align-self: center; }
 .start-live:hover { color: var(--text); text-decoration: underline; }
+
+.mode-card { display: grid; gap: 8px; }
+.mode-bar-head { display: flex; justify-content: space-between; font-size: 13px; }
+.mode-bar-head span { color: var(--muted); }
+.mode-bar-track { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--border); }
+.mode-note { margin: 0; font-size: 13px; line-height: 1.4; }

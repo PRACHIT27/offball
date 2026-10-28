@@ -211,9 +211,9 @@ export default function App() {
             <CaptionBar replay={replay} t={t} voice={captionVoice(viewer, club)} lang={lang}
                         accent={accent} />
           </div>
-          {(viewer === "analyst" || followed) && (
-            <SidePanel replay={replay} metrics={metrics} t={t} focus={followed} />
-          )}
+          <SidePanel replay={replay} metrics={metrics} t={t} focus={followed}
+                     mode={focus && viewer !== "player" && viewer !== "analyst" ? "player" : viewer}
+                     club={club} />
         </main>
       )}
       <Timeline replay={replay} t={t} onSeek={seek} />
