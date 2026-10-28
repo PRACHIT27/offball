@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.10.0`**
+**Doc set version: `v2.11.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,17 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.11.0 · 2026-10-27 · Prachit
+**Files:** VERSION.md (code: `sim/engine.py`, `scripts/results.py`, replays, results)
+**Type:** MINOR
+- Simulator, round two:
+  - **Defence drops with the ball:** out of possession, the back line stays at least 10 m goal-side of the ball. Before, it never dropped below about 30 m from goal, so attackers ended up behind it.
+  - **Offside line:** attackers line up with the opponent's last outfield defender, and an offside attacker jogs back at 5 m/s instead of 2–3 m/s. Moments with someone more than 2 m offside fell from about 65% to about 35%; most of what's left is players recovering after an attack.
+  - **Keepers** come off their line when their team has the ball (median 15 m, at most 20 m; was at most 12 m).
+  - **Shots:** a slightly higher bar to shoot (18–34 per match).
+- Full matches: about 20% of passes backward, 7–8% straight return passes, 3.6–3.8 passes per move.
+- Scores, scripted cards and every tactic change still land at the same minutes. Replays, captions, metrics views and results are rebuilt in the same push.
 
 ## v2.10.0 · 2026-10-27 · Prachit
 **Files:** VERSION.md (code: `sim/engine.py`, `sim/clubs.py`)
