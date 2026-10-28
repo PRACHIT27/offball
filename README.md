@@ -8,6 +8,15 @@
 
 ## Try it (judges, start here)
 
+**Demo video (under 2 minutes):** _link to be added_
+
+**What's different:** broadcasts explain the ball; OffBall explains the game off the ball. From
+tracking positions it finds decoy runs (who ran, which defenders followed, who got free) and the
+free man who isn't found. AI agents predict how a team will react to a goal, red card or
+substitution, then confirm or retract it against the numbers. A checker rejects any number not in
+the data. Five fan voices (analyst, casual fan, home supporter, away supporter, player) each get
+their own stats and their own AI take, in English, Spanish and Hindi.
+
 No sign-in needed except where noted. All clubs, players and matches are fictional and synthetic.
 
 | What | Link |
@@ -15,11 +24,20 @@ No sign-in needed except where noted. All clubs, players and matches are fiction
 | **Viewer screen** (recorded matches) | https://jolly-cliff-0ccede51e.4.azurestaticapps.net |
 | The 70' red card, analyst view | [open](https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4300&type=analyst&lang=en) |
 | Before/after board after the red card (74') | [open](https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4560&type=analyst&lang=en) |
-| The same moment, four ways | [open](https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4302&view=four&club=home&lang=en) |
+| The same moment, four ways | [open](https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4541&view=four&club=home&lang=en) |
+| Supporter view after the red card: attack and defence for your club | [open](https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&type=supporter&lang=en&t=4541&club=home) |
+| Player view: off the ball (decoy runs, teammates freed) | [open](https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&type=player&lang=en&t=4541) |
 | **Match control:** start a new match through the live Azure pipeline | https://offball-sim.whitemoss-2f18829c.westus2.azurecontainerapps.io |
 | **Producer console:** pull any cue off air during a live match | https://offball-cues.whitemoss-2f18829c.westus2.azurecontainerapps.io/producer |
 
-**1. Watch a recorded match.** Open the viewer, pick a match (Red Card, Comeback, Switch), press ▶, change speed or press **Next moment** (Space plays/pauses, ← → move 10 s). Try the viewer types (**Casual**, **Analyst**, **Supporter**, **Player**: tap any player, **Four ways**) and switch captions between **EN / ES / HI**.
+**1. Watch a recorded match.** Open the viewer, pick a match (Red Card, Comeback, Switch), press ▶, change speed or press **Next moment** (Space plays/pauses, ← → move 10 s). Switch captions between **EN / ES / HI**. Each viewer type has its own captions and its own stats beside the pitch:
+- **Casual:** the match so far: shots, on target, share of passes, chances in words, who's running the most.
+- **Analyst:** the full tactics panel: before/after board, xG race, shot map, passing, line height, control vs chaos, pressing, passing network.
+- **Supporter** (pick a club): attack and defence against the opponent, the standout, who keeps getting free, their danger man.
+- **Player** (tap any player): the player card, heatmap and off the ball: decoy runs, defenders pulled, teammates freed, times free but not found.
+- **Four ways:** the same moment for four viewer types side by side.
+
+Captions are two or three sentences: what changed, what it means, and an off-the-ball detail. If an old version shows, press **Ctrl+Shift+R**.
 
 **2. Run a live match.** Open match control, pick a storyline, choose a speed and press **Play**. The first Play after a quiet spell wakes the live services, so allow about two minutes. Once it streams, the match appears as **LIVE** in the viewer's match picker, and players, cues and agent captions arrive as the engine computes them. One match plays at a time.
 

@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.17.0`**
+**Doc set version: `v2.17.1`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,12 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.17.1 · 2026-10-28 · Prachit
+**Files:** README.md, VERSION.md
+**Type:** PATCH
+- README "Try it": a demo video placeholder, what's different, what each viewer type shows, and links to the 74' Supporter and Player views.
+- **Action required:** whoever uploads the video replaces "_link to be added_" with its URL.
 
 ## v2.17.0 · 2026-10-28 · Prachit
 **Files:** CLAUDE.md, VERSION.md (code: `insights/`, `engine/tactics/measures.py`, `web/src/replay.ts`, `web/src/types.ts`, replays)
