@@ -72,8 +72,10 @@ def clock_of(body: str) -> tuple[int, float] | None:
 
 
 class Runner:
-    def __init__(self, sender_factory=make_sender):
+    def __init__(self, sender_factory=make_sender, pipeline=None):
         self.status = Status()
+        # sim.control.pipeline.Pipeline: wakes the engine, insights and cue manager for a match
+        self.pipeline = pipeline
         self.lock = threading.Lock()
         self.stop_flag = threading.Event()
         self.thread: threading.Thread | None = None
@@ -82,7 +84,7 @@ class Runner:
     def snapshot(self) -> dict:
         with self.lock:
             s = asdict(self.status)
-        if s["started_at"] and s["phase"] in ("preparing", "streaming", "half-time"):
+        if s["started_at"] and s["phase"] in ("preparing", "waking", "streaming", "half-time"):
             s["elapsed_s"] = round(time.time() - s["started_at"], 1)
         return s
 
@@ -121,8 +123,26 @@ class Runner:
 
     def _run(self, storyline: str, seed: int | None, speed: float, mess: str) -> None:
         sender: Sender | None = None
+        waking, wake_error = None, []
+        if self.pipeline:
+            # Cold start (about a minute) overlaps simulating the match
+            def wake():
+                try:
+                    self.pipeline.wake()
+                except Exception as e:
+                    wake_error.append(e)
+            waking = threading.Thread(target=wake, daemon=True)
+            waking.start()
         try:
             feeds, meta = prepare(storyline, seed, mess)
+            if waking:
+                self._set(phase="waking", message="Waking the pipeline (about a minute)")
+                waking.join()
+                if wake_error:
+                    raise wake_error[0]
+                if self.stop_flag.is_set():
+                    self._set(phase="stopped", message="Stopped")
+                    return
             live_id = run_id(meta["match_id"])
             schedule = plan(feeds, speed, (meta["match_id"], live_id))
             self._set(match_id=live_id, home=meta["home"], away=meta["away"],
@@ -160,3 +180,5 @@ class Runner:
         finally:
             if sender:
                 sender.close()
+            if self.pipeline:
+                self.pipeline.match_over()

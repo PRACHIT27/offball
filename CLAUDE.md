@@ -172,7 +172,7 @@ teammate: [engine/metrics/README.md](engine/metrics/README.md).
 | Stream into Azure | `python -m sim stream --feeds local_feeds/m001/feeds --speed 10` |
 | Tests | `python -m pytest tests/sim` (full-match tests take about a minute each) |
 | Match control page, local (counts instead of sending) | `python -m sim.control --dry-run --port 8765`, then open http://localhost:8765 |
-| Match control, live | https://offball-sim.whitemoss-2f18829c.westus2.azurecontainerapps.io (no passcode) |
+| Match control, live | https://offball-sim.whitemoss-2f18829c.westus2.azurecontainerapps.io (no passcode). **Play wakes the pipeline** (engine, insights, cue manager: about a minute) and it sleeps again after `IDLE_MINUTES` (20) with no match (`sim/control/pipeline.py`) |
 | Match IDs when streaming | Every Play gets its own ID (`m001-1028-0215`), swapped into every message, so each run starts clean in every service. Match control is shared: anyone's Play reaches everyone's live screen |
 | Deploy match control to Azure (Docker + `az login`) | `[CONTROL_PASSCODE=…] scripts/deploy_sim.sh`: Container App `offball-sim` in `offball-env`, identity `id-sim` with send-only access to the raw hubs |
 
@@ -218,7 +218,7 @@ checker.
 info from Cosmos `events`, and runs the agent team per trigger. Live captions page:
 https://offball-insights.whitemoss-2f18829c.westus2.azurecontainerapps.io (`/health` shows counts and the
 last error). Deploy with `scripts/deploy_insights.sh` (Docker running; if the push to the registry drops,
-rerun it). To test: `scripts/engine.sh start`, then Play on match control. Every Play gets its own
+rerun it). To test: Play on match control (it starts the engine, insights and cue manager itself). Every Play gets its own
 match ID (`m001-1028-0215`: storyline ID, then UTC date and time), so a storyline can be replayed. The
 deployment's rate limit allows one live match at a time.
 

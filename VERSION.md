@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.15.0`**
+**Doc set version: `v2.16.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,22 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.16.0 · 2026-10-27 · Archit
+**Files:** CLAUDE.md, VERSION.md (code: `sim/control/pipeline.py`, `sim/control/runner.py`, `sim/control/app.py`, `sim/control/page.html`, `scripts/deploy_sim.sh`; also `docs/submission.md`)
+**Type:** MINOR
+- **The live pipeline wakes on Play and sleeps when idle.**
+  - Match control starts `offball-engine`, `offball-insights` and `offball-cues` when someone presses Play.
+  - A new phase, `waking`, lasts about a minute and overlaps simulating the match. Streaming starts once all three are Running and the insights and cue manager `/health` answer.
+  - After `IDLE_MINUTES` (20) with no match it stops them. Apps left on at boot are turned off too.
+  - This saves most of the roughly $8–10 a day the always-on pipeline cost.
+- No more `scripts/engine.sh start` before testing.
+- The viewer and producer console are unaffected: while the pipeline sleeps there is just no LIVE match, and the producer console is offline.
+- `id-sim` gets a custom role, "OffBall pipeline switch", on those three apps only. It allows read, start and stop, nothing else.
+- Off unless `PIPELINE_APPS` is set, so local match control is unchanged. Tests: `tests/sim/test_pipeline.py`.
+- `deploy_sim.sh` now retries a dropped registry push.
+- **Prachit:** this touches `sim/control/` (your lane). It is additive and behind `PIPELINE_APPS`.
+- **Action required:** someone with Owner rights runs `scripts/deploy_sim.sh` once (it creates the role and its assignments).
 
 ## v2.15.0 · 2026-10-27 · Archit
 **Files:** VERSION.md, `contracts/README.md`, `contracts/broadcast/*.schema.json` (also `docs/submission.md`, web, `.github/workflows/version-log.yml`)
