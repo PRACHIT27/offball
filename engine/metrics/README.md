@@ -148,7 +148,7 @@ Since v2.4.0 the `stats` hub exists:
 
 Kanika's `azure-setup.sh` scopes `id-engine`'s Cosmos role to `events` only. **Before
 `METRICS_ENABLED=1`, only the Cosmos part below is still needed.** The `cues` consumer group is
-optional, for the cue manager. **These commands have not been run**: ask the owner first, as the
+for the cue manager; `scripts/deploy_cues.sh` creates it. **These commands have not been run**: ask the owner first, as the
 Lane 1 rules require.
 
 ```sh
