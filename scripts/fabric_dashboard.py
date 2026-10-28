@@ -126,8 +126,9 @@ def definition(query_uri: str, workspace_id: str, db_id: str) -> dict:
                       "queryRef": {"kind": "query", "queryId": uid(f"q-{name}")},
                       "visualOptions": opts})
     return {
-        "$schema": "https://pbiadx.powerbi.com/static/d/schema/74/dashboard.json",
-        "schema_version": "74",
+        # The Fabric viewer only migrates from versions it knows; 88 is what it asks for (Oct 2026)
+        "$schema": "https://dataexplorer.azure.com/static/d/schema/88/dashboard.json",
+        "schema_version": 88,
         "title": TITLE,
         "autoRefresh": {"enabled": True, "defaultInterval": "30s", "minInterval": "30s"},
         "baseQueries": [],
@@ -144,6 +145,7 @@ def definition(query_uri: str, workspace_id: str, db_id: str) -> dict:
             "showOnPages": {"kind": "all"}}],
         "queries": queries,
         "tiles": tiles,
+        "embeddedApps": [],
     }
 
 
