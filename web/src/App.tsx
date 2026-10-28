@@ -140,6 +140,19 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, speed, recordedReplay, isLive]);
 
+  // Shareable link (AU-33): the URL carries the match, moment and view; written on pause, seek
+  // and every choice, not on every frame. A live match has no fixed moment.
+  const loaded = !!replay;
+  const writeUrl = useCallback(() => {
+    if (!matchId || !loaded) return;
+    const q = new URLSearchParams({ match: matchId, type: viewer, lang });
+    if (!isLive) q.set("t", String(Math.round(tRef.current / 1000)));
+    if (viewer === "supporter" || fourWays) q.set("club", club);
+    if (fourWays) q.set("view", "four");
+    history.replaceState(null, "", `${location.pathname}?${q}`);
+  }, [matchId, loaded, viewer, lang, club, fourWays, isLive]);
+  useEffect(() => { if (!playing) writeUrl(); }, [writeUrl, playing, playing ? 0 : t]);
+
   const seek = useCallback((to: number) => {
     tRef.current = Math.max(0, to);
     setT(tRef.current);
@@ -161,7 +174,8 @@ export default function App() {
 
   const snap = snapshotAt(replay, t);
   const next = () => {
-    const m = moments(replay).find((x) => x.t - 3000 > t + 500);
+    // Key moments only; insight markers are for browsing, not for stepping through
+    const m = moments(replay).find((x) => x.kind !== "insight" && x.t - 3000 > t + 500);
     if (m) seek(m.t - 3000);
   };
 
@@ -177,7 +191,12 @@ export default function App() {
               club={club} fourWays={fourWays} lang={lang}
               onMatch={(id) => setMatchId(id)} onPlay={() => setPlaying((p) => !p)}
               onSpeed={setSpeed} onViewer={setViewer} onClub={setClub} onFourWays={setFourWays}
-              onLang={setLang} onNextMoment={next} />
+              onLang={setLang} onNextMoment={next} liveCount={liveList.length} isLive={isLive}
+              onGoLive={() => liveList[0] && setMatchId(liveList[0].match_id)}
+              onCopyLink={async () => {
+                writeUrl();
+                try { await navigator.clipboard.writeText(location.href); return true; } catch { return false; }
+              }} />
       {fourWays ? (
         <main className="stage">
           <FourWays replay={replay} metrics={metrics} t={t} lang={lang} club={club}

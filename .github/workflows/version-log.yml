@@ -1,0 +1,26 @@
+# VERSION.md rule on every pull request: a change to a governed file (top-level docs,
+# docs/design/, contracts/) needs a VERSION.md entry in the same PR. Same rule as the local
+# .githooks/pre-commit, which this runs. Actions pinned to commit SHAs; no secrets are used.
+name: version-log
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  version-log:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Governed files changed without VERSION.md
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          VERSION_CHECK_FILES="$(git diff --name-only --diff-filter=ACMR "origin/$BASE_REF...HEAD")" \
+            sh .githooks/pre-commit

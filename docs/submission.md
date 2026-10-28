@@ -34,6 +34,11 @@ form.
   - passing quality, line height, control vs chaos, pressing and the passing network;
   - leaders;
   - tap a player for their card and heatmap.
+- **Timeline:** goals, cards, subs and tactic changes, plus a small purple dot for every agent
+  insight (hover to read it, click to jump there).
+- **Share:** the address bar always holds the match, moment and view; **Copy link** copies it.
+- **Live:** when a match is streaming, a red **LIVE** button appears; otherwise **Start a live
+  match ↗** opens match control.
 
 ## The pitch
 
@@ -79,13 +84,13 @@ IDs.
 
 | Measure | Result |
 |---|---|
-| Events recovered from the two messy feeds | **100.0%** average over 6 storylines (99.9–100%), clocks aligned within 0–40 ms, 0 dead letters |
-| Engine speed (metrics + tactics per 200 ms batch) | **1.4–1.8 ms** p95 (target ≤ 20 ms) |
-| Captions written by the agent team after checking | **941 of 1,320 (71%)**; the rest are template fallbacks |
+| Events recovered from the two messy feeds | **100.0%** on all 6 storylines, clocks aligned within 0–40 ms |
+| Engine speed (metrics + tactics per 200 ms batch) | **4.3–14.1 ms** p95 (target ≤ 20 ms) |
+| Insights written by the agent team after checking | **91 of 122 (75%)** in the three recorded matches, 12 captions each; the rest are template fallbacks |
 | Unchecked numbers on air | **0**: every caption passed the checks or is a template |
 | Agent latency | expect insights median 8 s; others median 20 s |
-| Scripted tactic changes detected (vs the hidden answer key) | **17 of 38 (45%)**, 88 false alarms |
-| Player stats vs simulator truth (realistic feed noise) | top speed within 0.3 m/s for 74–96% of players; distance median error 5–7% |
+| Scripted tactic changes detected (vs the hidden answer key) | **14 of 37 (38%)**, 99 false alarms |
+| Player stats vs simulator truth (realistic feed noise) | top speed within 0.3 m/s for 78–96% of players; distance median error 3.9–4.3% |
 
 Full tables: [results/RESULTS.md](../results/RESULTS.md) and
 [docs/insight-generation.md](insight-generation.md#results).

@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/PRACHIT27/offball/blob/main/contracts/broadcast/cue.schema.json",
+  "version": "0.2",
+  "$defs": {
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "event_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Event Ids",
+          "type": "array"
+        },
+        "frames": {
+          "default": [],
+          "items": {
+            "type": "integer"
+          },
+          "title": "Frames",
+          "type": "array"
+        }
+      },
+      "title": "Evidence",
+      "type": "object"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Point",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Number-only overlay cue. Goes on air at once; no approval step (Broadcast LLD \u00a75).\n\nBuilt on by: the cue manager and the browser cue player (Broadcast). Sent on `stats` with\nmessage property `type=cue`.",
+  "properties": {
+    "cue_id": {
+      "title": "Cue Id",
+      "type": "string"
+    },
+    "version": {
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": "0.2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "match_id": {
+      "title": "Match Id",
+      "type": "string"
+    },
+    "period": {
+      "title": "Period",
+      "type": "integer"
+    },
+    "kind": {
+      "enum": [
+        "speed_alert",
+        "distance_milestone",
+        "pass_arc",
+        "shot_speed",
+        "xg_summary",
+        "decoy_run",
+        "best_option"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "start_clock_ms": {
+      "title": "Start Clock Ms",
+      "type": "integer"
+    },
+    "duration_ms": {
+      "title": "Duration Ms",
+      "type": "integer"
+    },
+    "anchor": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Point"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "data": {
+      "additionalProperties": true,
+      "title": "Data",
+      "type": "object"
+    },
+    "evidence": {
+      "$ref": "#/$defs/Evidence"
+    },
+    "captions": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {},
+      "title": "Captions",
+      "type": "object"
+    },
+    "caption_source": {
+      "const": "none",
+      "default": "none",
+      "title": "Caption Source",
+      "type": "string"
+    },
+    "status": {
+      "default": "on_air",
+      "enum": [
+        "on_air",
+        "withdrawn"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "correction",
+            "producer_pull"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    }
+  },
+  "required": [
+    "cue_id",
+    "match_id",
+    "period",
+    "kind",
+    "start_clock_ms",
+    "duration_ms",
+    "data",
+    "evidence"
+  ],
+  "title": "Cue",
+  "type": "object"
+}

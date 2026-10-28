@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { clockLabel, scoreAt } from "../replay";
 import type { Language, MatchListing, Replay, Side, ViewerType } from "../types";
 import { TEAM_COLOUR } from "./Pitch";
@@ -22,7 +23,14 @@ interface Props {
   onFourWays: (on: boolean) => void;
   onLang: (l: Language) => void;
   onNextMoment: () => void;
+  /** Live matches on the cue manager right now; the LIVE button jumps to the newest one. */
+  liveCount: number;
+  isLive: boolean;
+  onGoLive: () => void;
+  onCopyLink: () => Promise<boolean>;
 }
+
+const MATCH_CONTROL = "https://offball-sim.whitemoss-2f18829c.westus2.azurecontainerapps.io";
 
 const VIEWERS: [ViewerType, string][] = [
   ["casual", "Casual"], ["analyst", "Analyst"], ["supporter", "Supporter"], ["player", "Player"],
@@ -30,6 +38,7 @@ const VIEWERS: [ViewerType, string][] = [
 
 export function TopBar(p: Props) {
   const [h, a] = scoreAt(p.replay, p.t);
+  const [copied, setCopied] = useState(false);
   return (
     <header className="topbar">
       <div className="brand">Off<span>Ball</span></div>
@@ -78,6 +87,17 @@ export function TopBar(p: Props) {
           ))}
         </div>
         <button onClick={p.onNextMoment} title="Jump to the next key moment">Next moment ⏭</button>
+        <button onClick={() => p.onCopyLink().then((ok) => { setCopied(ok); setTimeout(() => setCopied(false), 1500); })}
+                title="Copy a link to this moment and view">{copied ? "Link copied ✓" : "Copy link"}</button>
+        {p.liveCount > 0 && !p.isLive && (
+          <button className="go-live" onClick={p.onGoLive} title="A match is streaming through the live pipeline">
+            <i /> LIVE
+          </button>
+        )}
+        {p.liveCount === 0 && (
+          <a className="start-live" href={MATCH_CONTROL} target="_blank" rel="noreferrer"
+             title="Stream a new simulated match through Azure; it appears here as LIVE">Start a live match ↗</a>
+        )}
       </div>
     </header>
   );

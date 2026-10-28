@@ -3,7 +3,7 @@ import type { Replay } from "../types";
 
 export interface Moment {
   t: number;
-  kind: "goal" | "red" | "yellow" | "sub" | "shift";
+  kind: "goal" | "red" | "yellow" | "sub" | "shift" | "insight";
   label: string;
 }
 
@@ -22,6 +22,11 @@ export function moments(r: Replay): Moment[] {
         : `${key?.replace(/_m$/, "").replace(/_/g, " ")} changed`;
       out.push({ t: x.t, kind: "shift", label: `${clubName(r, x.team_id)}: ${what}` });
     }
+  }
+  // Insight Generation's explanations, as small markers under the key moments
+  for (const x of r.insights ?? []) {
+    const text = x.captions["analyst.en"] ?? x.captions["casual.en"] ?? x.kind;
+    out.push({ t: x.t, kind: "insight", label: `Insight · ${text.length > 110 ? `${text.slice(0, 107)}…` : text}` });
   }
   return out.sort((a, b) => a.t - b.t);
 }
@@ -47,6 +52,7 @@ export function Timeline({ replay: r, t, onSeek }: { replay: Replay; t: number; 
       <div className="legend">
         <span className="goal">Goal</span><span className="red">Red card</span><span className="yellow">Yellow</span>
         <span className="sub">Sub</span><span className="shift">Tactic change</span>
+        <span className="insight">Insight</span>
       </div>
     </div>
   );

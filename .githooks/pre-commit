@@ -9,7 +9,8 @@
 # Enable once per clone:   git config core.hooksPath .githooks
 # Emergency bypass:        git commit --no-verify   (then log it in the next commit)
 
-staged=$(git diff --cached --name-only --diff-filter=ACMR)
+# CI passes a pull request's changed files in VERSION_CHECK_FILES (.github/workflows/version-log.yml)
+staged=${VERSION_CHECK_FILES:-$(git diff --cached --name-only --diff-filter=ACMR)}
 
 governed=$(printf '%s\n' "$staged" | grep -E '^([A-Za-z_]+\.md|docs/design/[^/]+\.md|contracts/.+)$' | grep -v '^VERSION\.md$')
 
