@@ -12,6 +12,10 @@ CENTRE = np.array([52.5, 34.0])
 SPRINT_MS = 7.0
 FOUL_REASONS = ["late_tackle", "from_behind", "holding", "pushing"]
 SHAPE_MIN_LENGTH = 18.0
+ONSIDE_JOG_MS = 5.0
+DROP_GOAL_SIDE_M = 10.0
+SHOT_BIAS = 0.8
+GK_ADVANCE, GK_MAX_M = 0.18, 20.0
 PASS_WEIGHTS = {"open": 1.2, "open_m": 10.0, "progress": 1.0, "fit": 0.6, "lane": 0.8,
                 "lane_m": 2.0, "return": 1.2, "gk": 1.2}
 START_HINT = {1: (0, .1), 2: (0, .37), 3: (0, .63), 4: (0, .9), 5: (.4, .5), 6: (.5, .3),
@@ -298,7 +302,8 @@ class Engine:
         gd = float(np.linalg.norm(self.goal(team) - here))
         if gd < (34 if forcing else 28):
             options.append(("shot", None))
-            all_scores.append(3.0 * self.true_xg(team, here) - 0.45 + (2.6 if forcing else 0.0))
+            all_scores.append(3.0 * self.true_xg(team, here) - SHOT_BIAS
+                              + (2.6 if forcing else 0.0))
         ahead = [o for o in opp if (self.pos[o][0] - here[0]) * self.d(team) > 0]
         space = min([float(np.linalg.norm(self.pos[o] - here)) for o in ahead] or [10]) / 10
         options.append(("carry", None))
@@ -538,6 +543,7 @@ class Engine:
     def targets(self, f: int) -> np.ndarray:
         tgt = self.pos.copy()
         self.urgent = np.zeros(22, dtype=bool)
+        self.hurry = np.zeros(22, dtype=bool)
         bx, by = self.ball[0], self.ball[1]
         carrier_team = self.team_of(self.carrier) if self.carrier is not None else None
         for team in (self.home, self.away):
@@ -559,25 +565,29 @@ class Engine:
                 if tac.offside_trap and carrier_team == self.other(team) and bd > 35 \
                         and self.next_action - f < 10:
                     back += 3.0
-                back = max(6.0, tac.line_height_m - 7, min(back, bd - 1.5))
+                back = max(tac.line_height_m - 7, min(back, bd - 1.5))
+                back = max(6.0, min(back, bd - DROP_GOAL_SIDE_M))
                 length, width = tac.length_m, tac.width_m
             last_line = None
             if in_poss:
                 opp = self.outfield(self.other(team))
                 if opp:
                     opp_depth = np.sort(self.depth(team, self.pos[opp, 0]))[::-1]
-                    last_line = float(opp_depth[min(1, len(opp_depth) - 1)])
+                    last_line = max(float(opp_depth[0]), bd)
                     top = max(float(slots[:, 0].max()), 0.5)
                     length = min(length, max(SHAPE_MIN_LENGTH, (last_line - 0.5 - back) / top))
             dep = np.clip(back + slots[:, 0] * length, 3, 101)
             if last_line is not None:
                 fwd = slots[:, 0] >= 0.9
                 dep[fwd] = np.minimum(dep[fwd], last_line - 0.5)
+                now = self.depth(team, self.pos[outs, 0])
+                self.hurry[np.asarray(outs)[now > last_line - 0.5]] = True
             ys = np.clip(34 + (slots[:, 1] - 0.5) * width + 0.35 * (by - 34), 2, 66)
             tgt[outs, 0] = x0 + d * dep
             tgt[outs, 1] = ys
             g = self.gk(team)
-            tgt[g] = [x0 + d * float(np.clip(3 + 0.08 * bd, 2, 12)), 34 + 0.3 * (by - 34)]
+            tgt[g] = [x0 + d * float(np.clip(3 + GK_ADVANCE * bd, 2, GK_MAX_M)),
+                      34 + 0.3 * (by - 34)]
             if not in_poss and self.carrier is not None and carrier_team == self.other(team):
                 cpos = self.pos[self.carrier]
                 dd = np.linalg.norm(self.pos[outs] - cpos, axis=1)
@@ -617,6 +627,7 @@ class Engine:
             vmax *= 0.97
         cruise = np.where(self.urgent, vmax[:, 0],
                           np.where(dist[:, 0] > 15, 6.5, np.where(dist[:, 0] > 6, 3.4, 2.0)))
+        cruise = np.where(self.hurry & ~self.urgent, np.maximum(cruise, ONSIDE_JOG_MS), cruise)
         reach = np.where(self.urgent, 0.35, 1.5)[:, None]
         desired = np.where(dist > 1e-6, delta / np.maximum(dist, 1e-6), 0) \
             * np.minimum(cruise[:, None], dist / reach)
