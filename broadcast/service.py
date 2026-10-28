@@ -244,8 +244,9 @@ async def run() -> None:
             if os.environ.get("FABRIC_KUSTO_URI") else None
         svc = CueService(pubsub, cosmos, os.environ.get("INSIGHTS_URL"),
                          os.environ.get("PRODUCER_PASSCODE") or None, fabric)
-        hub = EventHubConsumerClient(os.environ["EVENTHUB_NAMESPACE"], "cues",
-                                     eventhub_name="stats", credential=cred)
+        hub = EventHubConsumerClient(fully_qualified_namespace=os.environ["EVENTHUB_NAMESPACE"],
+                                     eventhub_name="stats", consumer_group="cues",
+                                     credential=cred)
         runner = web.AppRunner(svc.app())
         await runner.setup()
         await web.TCPSite(runner, "0.0.0.0", int(os.environ.get("PORT", "8080"))).start()
