@@ -147,8 +147,8 @@ def main() -> None:
               f"(+{r['tactics']['false_alarms']} false), distance err "
               f"{r['metrics']['distance_error_median_pct']}%", flush=True)
     args.out.mkdir(parents=True, exist_ok=True)
-    (args.out / "results.json").write_text(json.dumps(rows, indent=1))
-    (args.out / "RESULTS.md").write_text(markdown(rows))
+    (args.out / "results.json").write_text(json.dumps(rows, indent=1), encoding="utf-8")
+    (args.out / "RESULTS.md").write_text(markdown(rows), encoding="utf-8")
     print(markdown(rows))
 
 
