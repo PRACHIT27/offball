@@ -14,6 +14,27 @@ function totalsAt(r: Replay, t: number) {
   return i >= 0 ? r.totals[i].players : {};
 }
 
+function seriesValue(r: Replay, club: string, t: number, key: string): number | null {
+  for (let i = lastIndex(r.tactics, t, (x) => x.t); i >= 0; i--) {
+    const x = r.tactics[i];
+    if (x.kind === "series" && x.team_id === club && typeof x.values?.[key] === "number") {
+      return x.values[key];
+    }
+  }
+  return null;
+}
+
+function teamOffBall(r: Replay, t: number, side: Side) {
+  const mine = (pid: string | undefined) => !!pid && teamOf(r, pid) === side;
+  const seen = r.cues.filter((c) => c.t <= t);
+  const options = seen.filter((c) => c.kind === "best_option" && c.data.best?.open
+    && mine(c.data.passer_id));
+  return {
+    decoyRuns: seen.filter((c) => c.kind === "decoy_run" && mine(c.data.runner_id)).length,
+    freeMissed: options.filter((c) => c.data.chosen_id !== c.data.best.player_id).length,
+  };
+}
+
 function teamStats(r: Replay, t: number, side: Side) {
   const club = r[side].club_id;
   const shots = r.events.filter((e) => e.type === "shot" && e.team === club && e.t <= t);
@@ -26,7 +47,11 @@ function teamStats(r: Replay, t: number, side: Side) {
   const distance = players.reduce((a, [, v]) => a + v.distance_m, 0);
   return { club, name: r[side].name, goals, shots: shots.length,
     onTarget: shots.filter((e) => ON_TARGET.has(e.outcome ?? "")).length,
-    xg: xg?.total_xg ?? 0, xgText: xg?.text ?? "No chances yet",
+    xg: xg?.total_xg ?? 0, xgText: xg?.text ?? "No chances yet", bigChances: xg?.big_chances ?? 0,
+    pressing: seriesValue(r, club, t, "pressing_per_min"),
+    line: seriesValue(r, club, t, "line_height_m"),
+    control: seriesValue(r, club, t, "control_share"),
+    ...teamOffBall(r, t, side),
     passes, accuracy: passes ? done / passes : null, distanceKm: distance / 1000, players };
 }
 
@@ -40,6 +65,10 @@ function offBall(r: Replay, t: number, pid: string, sinceMs = 0) {
   const found = recent.filter((c) => c.kind === "best_option" && c.data.chosen_id === pid).length;
   return { runs: runs.length, pulled, freed: [...freed].map((p) => surname(r, p)), free, found };
 }
+
+const pct = (v: number | null) => (v === null ? "–" : `${Math.round(v * 100)}%`);
+const perMin = (v: number | null) => (v === null ? "–" : `${v.toFixed(1)}/min`);
+const metres = (v: number | null) => (v === null ? "–" : `${v.toFixed(0)} m`);
 
 function Bar({ label, home, away, fmt = (v: number) => v.toFixed(0) }:
   { label: string; home: number; away: number; fmt?: (v: number) => string }) {
@@ -94,13 +123,25 @@ export function SupporterStats({ replay: r, t, club }: { replay: Replay; t: numb
     <section className="card mode-card" style={{ borderColor: TEAM_COLOUR[club] }}>
       <h3 style={{ color: TEAM_COLOUR[club] }}>{mine.name}</h3>
       <table className="stat-table">
-        <thead><tr><th /><th>{mine.club}</th><th>{theirs.club}</th></tr></thead>
+        <thead><tr><th>Attack</th><th>{mine.club}</th><th>{theirs.club}</th></tr></thead>
         <tbody>
           {row("Goals", `${mine.goals}`, `${theirs.goals}`)}
           {row("Shots (on target)", `${mine.shots} (${mine.onTarget})`, `${theirs.shots} (${theirs.onTarget})`)}
           {row("xG", mine.xg.toFixed(2), theirs.xg.toFixed(2))}
-          {row("Pass accuracy", mine.accuracy === null ? "–" : `${Math.round(mine.accuracy * 100)}%`,
-               theirs.accuracy === null ? "–" : `${Math.round(theirs.accuracy * 100)}%`)}
+          {row("Big chances", `${mine.bigChances}`, `${theirs.bigChances}`)}
+          {row("Decoy runs", `${mine.decoyRuns}`, `${theirs.decoyRuns}`)}
+          {row("Free man missed", `${mine.freeMissed}`, `${theirs.freeMissed}`)}
+          {row("Pass accuracy", pct(mine.accuracy), pct(theirs.accuracy))}
+        </tbody>
+      </table>
+      <table className="stat-table">
+        <thead><tr><th>Defence</th><th>{mine.club}</th><th>{theirs.club}</th></tr></thead>
+        <tbody>
+          {row("Shots conceded", `${theirs.shots} (${theirs.onTarget})`, `${mine.shots} (${mine.onTarget})`)}
+          {row("xG conceded", theirs.xg.toFixed(2), mine.xg.toFixed(2))}
+          {row("Pressing", perMin(mine.pressing), perMin(theirs.pressing))}
+          {row("Defensive line", metres(mine.line), metres(theirs.line))}
+          {row("Control of play", pct(mine.control), pct(theirs.control))}
           {row("Ground covered", `${mine.distanceKm.toFixed(1)} km`, `${theirs.distanceKm.toFixed(1)} km`)}
         </tbody>
       </table>
