@@ -1,0 +1,14 @@
+{
+  "servers": {
+    "offball-stats": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "mcp_stats.server"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "OFFBALL_MATCH": "m001",
+        "OFFBALL_MATCH_DATA": "${workspaceFolder}/local_out/m001/insights/data"
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+# Allowlist: only what Dockerfile.cues needs reaches the build (never .env, .venv, feeds)
+*
+!pyproject.toml
+!broadcast/
+**/__pycache__

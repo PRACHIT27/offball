@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.11.0`**
+**Doc set version: `v2.13.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,29 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.13.0 · 2026-10-27 · Archit
+**Files:** VERSION.md, `docs/submission.md` (code: `broadcast/`, `scripts/fabric_*.py`, `scripts/deploy_cues.sh`, `web/src/live.ts`, `.vscode/mcp.json`)
+**Type:** MINOR
+- **Broadcast is built** (LLD §5–§9): cue manager `offball-cues` (Container App, identity `id-cues`) reads `stats` with consumer group **`cues`**, keeps versions, corrections and producer pulls, attaches Insight Generation captions from `/api/insights`, and pushes to **Web PubSub** hub `offball`, group `match-{id}`. Producer console at `/producer`; pulling needs `PRODUCER_PASSCODE`.
+- **Viewer live mode:** live matches from `/api/matches` appear in the picker as `live:{id}`; recorded replays work as before.
+- **Fabric (Platform PL-18):** workspace `OffBall`, Eventhouse and KQL database `offball` with tables `Matches`, `Stats`, `Triggers`, `Cues`, `Ingest`, `Latency` (schema in `broadcast/fabric.py`), and the Real-Time Dashboard "OffBall live match". The three matches are loaded with `scripts/fabric_load.py`; the cue manager streams live ones in when `FABRIC_KUSTO_URI` is set (`id-cues` is database ingestor only).
+- `docs/submission.md`: producer console, live mode, Fabric, Web PubSub; Copilot/MCP section filled with what we know is true, plus a team TODO for any Copilot use. `.vscode/mcp.json` registers our MCP stats server for Copilot Agent Mode.
+- **Action required (team):** run `scripts/deploy_cues.sh` (Docker running) and keep the printed producer passcode for the judges' form; add a Fabric dashboard screenshot as `docs/img/fabric-dashboard.png`.
+
+## v2.12.0 · 2026-10-27 · Archit
+**Files:** README.md, VERSION.md (also `docs/submission.md`, `.devcontainer/devcontainer.json`)
+**Type:** MINOR
+- `docs/submission.md` is new. It holds:
+  - the pitch draft and how to try it (live links, no login);
+  - the results numbers, taken from `results/RESULTS.md` and `docs/insight-generation.md`;
+  - the Microsoft technology actually used, and honesty notes (synthetic only, positions not video, what isn't built).
+- The README links it at the top for judges.
+- Codespaces dev container: Python 3.12, Node 22, Azure CLI, all extras installed, hook enabled.
+- **Action required (team):**
+  - fill the Copilot / Azure MCP Server section in `docs/submission.md` with what you really did;
+  - review the pitch;
+  - add the video link when it's recorded.
 
 ## v2.11.0 · 2026-10-27 · Prachit
 **Files:** VERSION.md (code: `sim/engine.py`, `scripts/results.py`, replays, results)
