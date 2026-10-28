@@ -1,0 +1,15 @@
+{
+  "name": "OffBall",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" },
+    "ghcr.io/devcontainers/features/azure-cli:1": {}
+  },
+  "postCreateCommand": "pip install -e '.[dev,azure,control,insights]' azure-functions && (cd web && npm ci) && git config core.hooksPath .githooks",
+  "forwardPorts": [5173, 8765],
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "charliermarsh.ruff", "GitHub.copilot", "ms-azuretools.vscode-azurefunctions"]
+    }
+  }
+}
