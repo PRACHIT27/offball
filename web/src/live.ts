@@ -31,6 +31,8 @@ class LiveBuilder {
   col = new Map<string, number>();
   lastT = 0;
   lastArrival = performance.now();
+  /** True once the late joiner's state is loaded and messages arrive as they happen. */
+  streaming = false;
 
   constructor(matchId: string, prematch: any | null) {
     const players: Replay["players"] = {};
@@ -135,9 +137,13 @@ class LiveBuilder {
         }
         break;
       }
-      case "insight":
-        this.replay.insights = [...(this.replay.insights ?? []), env.data].sort((a, b) => a.t - b.t);
+      case "insight": {
+        // The agents take 8–20 s while the match clock runs on (80–200 s at 10×), and the caption
+        // bar holds a caption for 10 s from its t: show a live one from when it arrives
+        const t = this.streaming ? Math.max(env.data.t, this.lastT) : env.data.t;
+        this.replay.insights = [...(this.replay.insights ?? []), { ...env.data, t }].sort((a, b) => a.t - b.t);
         break;
+      }
     }
   }
 }
@@ -180,6 +186,7 @@ export function useLive(matchId: string | null): LiveMatch | null {
       for (const row of state.insights) b.apply({ type: "insight", data: row });
       for (const c of state.cues) if (c.kind !== "insight") b.apply({ type: "cue", cue: c });
       emit();
+      b.streaming = true;
       const { url } = await (await fetch(`${CUES_URL}/api/negotiate?match=${encodeURIComponent(id)}`)).json();
       if (closed) return;
       ws = new WebSocket(url);
