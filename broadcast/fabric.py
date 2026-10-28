@@ -45,6 +45,13 @@ def _minute(clock_ms) -> float | None:
     return None if clock_ms is None else round(clock_ms / 60_000, 3)
 
 
+def match_row(match_id: str, prematch: dict, kickoff: str, storyline: str = "live") -> dict:
+    home, away = prematch["home"], prematch["away"]
+    return {"match_id": match_id, "storyline": storyline, "home_id": home["club_id"],
+            "home": home["name"], "away_id": away["club_id"], "away": away["name"],
+            "kickoff": kickoff}
+
+
 def rows(at: str, body: dict, props: dict) -> list[tuple[str, dict]]:
     """One hub message as (table, row) pairs; [] for anything the dashboard doesn't use."""
     mid = body.get("match_id") or props.get("match_id")

@@ -131,7 +131,10 @@ class MatchCues:
         """Everything a viewer joining late needs to draw the match up to now."""
         return {"match_id": self.match_id, "p1_end": self.p1_end, "last_t": self.last_t,
                 "prematch": self.prematch, "positions": list(self.positions),
-                "cues": list(self.cues.values()), "insights": list(self.insights.values()),
+                "cues": list(self.cues.values()),
+                # A caption the producer pulled stays off the screen for late joiners too
+                "insights": [row for iid, row in self.insights.items()
+                             if self.cues[insight_cue_id(iid)].get("status") != "withdrawn"],
                 "stats": self.history["stats"], "tactics": self.history["tactics"]}
 
     def summary(self) -> dict:

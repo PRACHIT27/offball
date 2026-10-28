@@ -18,7 +18,7 @@ from pathlib import Path
 import aiohttp
 from azure.identity.aio import DefaultAzureCredential
 
-from broadcast.fabric import SCHEMA, KustoSink, iso, rows
+from broadcast.fabric import SCHEMA, KustoSink, iso, match_row, rows
 from engine.local import Pipeline, messages
 from engine.metrics.models import Cue, StatsMessage
 from engine.metrics.router import MetricsEngine
@@ -54,12 +54,8 @@ async def load(args) -> None:
             merge_ms = (time.perf_counter() - t0) * 1000
             for clean in cleans:
                 if clean.kind == "prematch":
-                    pm = clean.prematch
-                    sink.add("Matches", {"match_id": args.match, "storyline": args.storyline,
-                                         "home_id": pm["home"]["club_id"],
-                                         "home": pm["home"]["name"],
-                                         "away_id": pm["away"]["club_id"],
-                                         "away": pm["away"]["name"], "kickoff": kickoff})
+                    sink.add("Matches", match_row(args.match, clean.prematch, kickoff,
+                                                  args.storyline))
                 t1 = time.perf_counter()
                 m_out = metrics.dispatch(clean)
                 t2 = time.perf_counter()

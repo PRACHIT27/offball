@@ -84,3 +84,12 @@ def test_state_has_recent_positions_cues_and_history():
     assert len(s["cues"]) == 1 and len(s["stats"]) == 1 and len(s["tactics"]) == 1
     assert s["tactics"][0]["data"]["values"]["line_height_m"] == 33.0
     assert m.summary()["messages"] == POSITIONS_KEEP + 15
+
+
+def test_pulled_insight_is_left_out_of_state_for_late_joiners():
+    m = MatchCues("m1")
+    m.add_insights([{"insight_id": "i-001", "t": 60_000, "kind": "shift", "captions": {},
+                     "evidence": {}}, {"insight_id": "i-002", "t": 70_000, "kind": "summary",
+                                       "captions": {}, "evidence": {}}])
+    assert m.pull("ins-i-001")["cue"]["status"] == "withdrawn"
+    assert [r["insight_id"] for r in m.state()["insights"]] == ["i-002"]
