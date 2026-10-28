@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OffBall producer console</title>
+<style>
+  :root { --bg:#0f1512; --panel:#161e19; --text:#e6ece7; --muted:#9aa89f; --line:#26332b;
+          --green:#5fbf8a; --amber:#e8a24f; --red:#e5484d; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.4 Inter, system-ui, sans-serif; }
+  header { display:flex; gap:16px; align-items:center; flex-wrap:wrap; padding:12px 18px;
+           background:var(--panel); border-bottom:1px solid var(--line); }
+  h1 { margin:0; font-size:20px; } h1 span { color:var(--green); }
+  select, input, button { font:inherit; color:inherit; background:#1c2620; border:1px solid var(--line);
+           border-radius:6px; padding:6px 10px; }
+  button { cursor:pointer; } button:hover { border-color:var(--green); }
+  .health { display:flex; gap:18px; flex-wrap:wrap; padding:8px 18px; color:var(--muted); font-size:13px; }
+  .health b { color:var(--text); font-family: ui-monospace, monospace; font-weight:500; }
+  .ok { color:var(--green); } .bad { color:var(--red); }
+  main { padding:12px 18px; }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; color:var(--muted); font-weight:500; font-size:12px; padding:6px 8px; border-bottom:1px solid var(--line); }
+  td { padding:7px 8px; border-bottom:1px solid #1c2620; vertical-align:top; }
+  td.num { font-family: ui-monospace, monospace; white-space:nowrap; }
+  tr.withdrawn td { color:var(--muted); text-decoration: line-through; }
+  .badge { font-size:11px; padding:1px 6px; border-radius:4px; border:1px solid var(--line); }
+  .badge.agent { color:var(--green); border-color:var(--green); }
+  .badge.on_air { color:var(--amber); border-color:var(--amber); }
+  .pull { border-color:var(--red); color:var(--red); }
+  .muted { color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Off<span>Ball</span> producer console</h1>
+  <label>Match <select id="match"></select></label>
+  <label>Passcode <input id="pass" type="password" autocomplete="off" placeholder="needed to pull" /></label>
+  <span class="muted">Every cue goes on air automatically; pull one to take it off every screen.</span>
+</header>
+<div class="health" id="health">Loading…</div>
+<main>
+  <table>
+    <thead><tr><th>Time</th><th>Kind</th><th>Content</th><th>Source</th><th>Status</th><th>v</th><th></th></tr></thead>
+    <tbody id="cues"></tbody>
+  </table>
+  <p class="muted" id="empty"></p>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let current = null;
+try { $("pass").value = sessionStorage.getItem("offball.passcode") || ""; } catch {}
+$("pass").addEventListener("change", () => { try { sessionStorage.setItem("offball.passcode", $("pass").value); } catch {} });
+
+function minute(t) { const m = Math.floor(t / 60000), s = Math.floor((t % 60000) / 1000); return `${m}:${String(s).padStart(2, "0")}`; }
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c])); }
+function content(c) {
+  if (c.kind === "insight") return esc((c.captions || {})["analyst.en"] || (c.captions || {})["casual.en"] || "");
+  const d = c.data || {};
+  if (c.kind === "pass_arc") return `pass ${esc(d.passer_id)} → ${esc(d.receiver_id)} · ${d.distance_m ?? "?"} m · difficulty ${d.difficulty ?? "?"}`;
+  if (c.kind === "speed_alert") return `${esc(d.player_id)} ${d.speed_kmh} km/h`;
+  if (c.kind === "shot_speed") return `shot ${esc(d.player_id)} ${d.speed_kmh} km/h · xG ${d.xg}`;
+  if (c.kind === "xg_summary") return `${esc(d.team_id)}: ${esc(d.text)}`;
+  return esc(JSON.stringify(d).slice(0, 120));
+}
+
+async function loadMatches() {
+  const r = await fetch("/api/matches"); const { matches } = await r.json();
+  const sel = $("match"); const keep = sel.value;
+  sel.innerHTML = matches.map((m) => `<option value="${esc(m.match_id)}">${esc(m.match_id)}${m.home ? ` · ${esc(m.home)} v ${esc(m.away)}` : ""}</option>`).join("");
+  if (keep && matches.some((m) => m.match_id === keep)) sel.value = keep;
+  current = sel.value || null;
+  if (!matches.length) $("empty").textContent = "No live match yet. Start one from match control.";
+}
+
+async function refresh() {
+  if (!current) return;
+  const [cr, hr] = await Promise.all([fetch(`/api/matches/${encodeURIComponent(current)}/cues`), fetch("/health")]);
+  if (!cr.ok) return;
+  const data = await cr.json(); const health = await hr.json();
+  const age = data.last_message_at ? Math.round(Date.now() / 1000 - data.last_message_at) : null;
+  $("health").innerHTML = [
+    `Feed <b class="${age !== null && age < 10 ? "ok" : "bad"}">${age === null ? "none" : age + " s ago"}</b>`,
+    `Match time <b>${minute(data.last_t)}</b>`, `Messages <b>${data.messages}</b>`,
+    `Cues <b>${data.cue_count}</b>`, `Insights <b>${data.insights}</b>`, `Pulled <b>${data.pulls}</b>`,
+    `Insight Generation <b class="${health.insights_ok ? "ok" : "bad"}">${health.insights_ok === null ? "not configured" : health.insights_ok ? "up" : "not reachable"}</b>`,
+    `Live push <b class="${health.pubsub ? "ok" : "bad"}">${health.pubsub ? "on" : "off"}</b>`,
+  ].join("");
+  $("empty").textContent = data.cues.length ? "" : "No cues yet.";
+  $("cues").innerHTML = data.cues.map((c) => `
+    <tr class="${c.status === "withdrawn" ? "withdrawn" : ""}">
+      <td class="num">${minute(c.t)}</td><td>${esc(c.kind)}</td><td>${content(c)}</td>
+      <td><span class="badge ${c.caption_source === "agent" ? "agent" : ""}">${esc(c.source)}${c.caption_source && c.caption_source !== "none" ? " · " + esc(c.caption_source) : ""}</span></td>
+      <td>${c.status === "withdrawn" ? `withdrawn (${esc(c.reason || "")})` : `<span class="badge on_air">on air</span>`}</td>
+      <td class="num">${c.version}</td>
+      <td>${c.status === "withdrawn" ? "" : `<button class="pull" data-cue="${esc(c.cue_id)}">Pull</button>`}</td>
+    </tr>`).join("");
+}
+
+$("cues").addEventListener("click", async (e) => {
+  const id = e.target?.dataset?.cue; if (!id) return;
+  if (!confirm(`Pull ${id} off every screen?`)) return;
+  const r = await fetch(`/api/cues/${encodeURIComponent(current)}/${encodeURIComponent(id)}/pull`,
+    { method: "POST", headers: { "X-Producer-Passcode": $("pass").value, "X-Producer": "console" } });
+  if (!r.ok) alert(r.status === 401 ? "Wrong or missing passcode" : `Pull failed (${r.status})`);
+  refresh();
+});
+$("match").addEventListener("change", () => { current = $("match").value; refresh(); });
+loadMatches().then(refresh);
+setInterval(refresh, 2000); setInterval(loadMatches, 10000);
+</script>
+</body>
+</html>

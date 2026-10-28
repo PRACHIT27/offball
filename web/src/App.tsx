@@ -5,6 +5,7 @@ import { Pitch, TEAM_COLOUR } from "./components/Pitch";
 import { SidePanel } from "./components/SidePanel";
 import { moments, Timeline } from "./components/Timeline";
 import { TopBar } from "./components/TopBar";
+import { LIVE_PREFIX, listLive, useLive } from "./live";
 import { captionVoice, lastIndex, snapshotAt } from "./replay";
 import type { Language, MatchListing, MetricsView, Replay, Side, ViewerType } from "./types";
 
@@ -40,11 +41,20 @@ function save(key: string, value: unknown) {
 
 export default function App() {
   const params = new URLSearchParams(location.search);
-  const [matches, setMatches] = useState<MatchListing[]>([]);
+  const [recorded, setRecorded] = useState<MatchListing[]>([]);
+  const [liveList, setLiveList] = useState<MatchListing[]>([]);
   const [matchId, setMatchId] = useState<string | null>(params.get("match"));
-  const [replay, setReplay] = useState<Replay | null>(null);
+  const [recordedReplay, setReplay] = useState<Replay | null>(null);
   // Performance Metrics side file; optional, the screen works without it
-  const [metrics, setMetrics] = useState<MetricsView | null>(null);
+  const [recordedMetrics, setMetrics] = useState<MetricsView | null>(null);
+  const isLive = !!matchId?.startsWith(LIVE_PREFIX);
+  // Live matches come from the cue manager over Web PubSub (Broadcast LLD §8)
+  const live = useLive(isLive ? matchId : null);
+  const liveRef = useRef(live);
+  liveRef.current = live;
+  const replay = isLive ? live?.replay ?? null : recordedReplay;
+  const metrics = isLive ? live?.metrics ?? null : recordedMetrics;
+  const matches = [...liveList, ...recorded];
   const [error, setError] = useState<string | null>(null);
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -63,16 +73,24 @@ export default function App() {
 
   useEffect(() => {
     fetch(`${BASE}index.json`).then((r) => r.json()).then((list: MatchListing[]) => {
-      setMatches(list);
+      setRecorded(list);
       setMatchId((id) => id ?? list[0]?.match_id ?? null);
     }).catch(() => setError("No replays found. Build one with scripts/build_replay.py."));
+    const poll = () => listLive().then(setLiveList);
+    poll();
+    const timer = setInterval(poll, 15_000);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
     if (!matchId) return;
     setReplay(null);
-    setPlaying(false);
     setMetrics(null);
+    if (matchId.startsWith(LIVE_PREFIX)) {
+      setPlaying(true); // a live match follows the newest frames
+      return;
+    }
+    setPlaying(false);
     fetch(`${BASE}${matchId}.metrics.json`).then((r) => (r.ok ? r.json() : null))
       .then((m: MetricsView | null) => setMetrics(m)).catch(() => setMetrics(null));
     fetch(`${BASE}${matchId}.json`).then((r) => r.json()).then((rep: Replay) => {
@@ -88,9 +106,25 @@ export default function App() {
   useEffect(() => save("offball.club", club), [club]);
   useEffect(() => save("offball.lang", lang), [lang]);
 
+  // Live clock: follows just behind the newest frame while playing
+  useEffect(() => {
+    if (!isLive || !playing) return;
+    let raf = 0;
+    const tick = () => {
+      const l = liveRef.current;
+      if (l) {
+        tRef.current = Math.max(0, l.now());
+        setT(tRef.current);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [isLive, playing]);
+
   // Match clock: advances at the viewer's speed, one React render per animation frame
   useEffect(() => {
-    if (!playing || !replay) return;
+    if (isLive || !playing || !replay) return;
     let raf = 0;
     let last = performance.now();
     const end = replay.periods["2"].t1;
@@ -103,7 +137,8 @@ export default function App() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [playing, speed, replay]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, speed, recordedReplay, isLive]);
 
   const seek = useCallback((to: number) => {
     tRef.current = Math.max(0, to);
@@ -122,7 +157,7 @@ export default function App() {
   }, [seek]);
 
   if (error) return <div className="splash">{error}</div>;
-  if (!replay) return <div className="splash">Loading match…</div>;
+  if (!replay) return <div className="splash">{isLive ? "Connecting to the live match…" : "Loading match…"}</div>;
 
   const snap = snapshotAt(replay, t);
   const next = () => {
