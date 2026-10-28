@@ -115,7 +115,8 @@ TILES = [
 def definition(query_uri: str, workspace_id: str, db_id: str) -> dict:
     ds, page = uid("datasource"), uid("page")
     queries = [{"id": uid("q-matches"), "dataSource": {"kind": "inline", "dataSourceId": ds},
-                "text": "Matches | order by match_id asc | project match_id", "usedVariables": []}]
+                "text": "Matches | distinct match_id | order by match_id asc",
+                "usedVariables": []}]
     tiles = []
     for name, title, visual, (x, y, w, h), text, opts in TILES:
         queries.append({"id": uid(f"q-{name}"), "dataSource": {"kind": "inline",
