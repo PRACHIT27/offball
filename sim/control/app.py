@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from sim.clubs import CLUBS
+from sim.control.pipeline import from_env
 from sim.control.runner import Runner, prepare
 from sim.storyline import BUILT_IN
 
@@ -28,11 +29,13 @@ async def lifespan(_app):
     if os.environ.get("WARM_STORYLINE"):
         threading.Thread(target=prepare, args=(os.environ["WARM_STORYLINE"], None, "light"),
                          daemon=True).start()
+    if runner.pipeline:
+        threading.Thread(target=runner.pipeline.watch, daemon=True).start()
     yield
 
 
 app = FastAPI(title="OffBall match control", docs_url=None, redoc_url=None, lifespan=lifespan)
-runner = Runner()
+runner = Runner(pipeline=from_env())
 
 
 class PlayRequest(BaseModel):
@@ -72,6 +75,7 @@ def storylines() -> dict:
 @app.get("/api/status")
 def status() -> dict:
     s = runner.snapshot()
+    s["pipeline"] = runner.pipeline.state if runner.pipeline else "off"
     for side in ("home", "away"):
         if s[side] in CLUBS:
             s[f"{side}_name"] = CLUBS[s[side]].name

@@ -182,7 +182,7 @@ $("play").addEventListener("click", () => {
 $("stop").addEventListener("click", () => act("api/stop"));
 $("seed").addEventListener("input", () => { $("error").textContent = ""; });
 
-const PHASES = {idle: ["Idle", ""], preparing: ["Preparing", "wait"], streaming: ["Live", "live"],
+const PHASES = {idle: ["Idle", ""], preparing: ["Preparing", "wait"], waking: ["Waking the pipeline", "wait"], streaming: ["Live", "live"],
   "half-time": ["Half-time", "wait"], finished: ["Full time", ""], stopped: ["Stopped", ""], error: ["Error", "bad"]};
 
 async function refresh() {
@@ -191,7 +191,11 @@ async function refresh() {
     const [label, cls] = PHASES[s.phase] || [s.phase, ""];
     $("phase").textContent = label;
     $("phase").className = "pill " + cls;
-    $("teams").textContent = s.home_name ? `${s.home_name} v ${s.away_name}` : (s.phase === "preparing" ? "Getting the match ready" : "No match playing");
+    $("teams").textContent = s.home_name ? `${s.home_name} v ${s.away_name}`
+      : (s.phase === "preparing" ? "Getting the match ready"
+      : s.phase === "waking" ? "Starting the engine, agents and cue manager (about a minute)"
+      : s.pipeline === "asleep" ? "No match playing · the pipeline is asleep; Play wakes it (about a minute)"
+      : "No match playing");
     $("clock").textContent = `${String(Math.floor(s.minute || 0)).padStart(2, "0")}'`;
     const done = (s.sent.A + s.sent.B);
     $("progress").style.width = s.total ? `${Math.min(100, 100 * done / s.total)}%` : "0";
@@ -200,7 +204,7 @@ async function refresh() {
     $("sentB").textContent = s.sent.B.toLocaleString();
     $("elapsed").textContent = s.started_at ? `${Math.round(s.elapsed_s)} s` : "–";
     if (s.message) $("message").textContent = s.message;
-    const running = ["preparing", "streaming", "half-time"].includes(s.phase);
+    const running = ["preparing", "waking", "streaming", "half-time"].includes(s.phase);
     $("play").disabled = running;
     $("stop").disabled = !running;
   } catch (e) {}
