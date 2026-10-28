@@ -10,7 +10,7 @@ matches.
 |---|---|
 | **Viewer screen** (three recorded matches) | https://jolly-cliff-0ccede51e.4.azurestaticapps.net |
 | The 70' red card, analyst view | https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4300&type=analyst&lang=en |
-| Before/after board for that red card (76') | https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4560&type=analyst&lang=en |
+| Before/after board for that red card (74') | https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4560&type=analyst&lang=en |
 | The same moment four ways | https://jolly-cliff-0ccede51e.4.azurestaticapps.net/?match=m001&t=4302&view=four&club=home&lang=en |
 | **Match control:** stream a new simulated match through the live Azure pipeline | https://offball-sim.whitemoss-2f18829c.westus2.azurecontainerapps.io |
 | Live agent captions for that match (while the insights service is running) | https://offball-insights.whitemoss-2f18829c.westus2.azurecontainerapps.io |
