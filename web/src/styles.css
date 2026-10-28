@@ -97,12 +97,13 @@ button, select { font: inherit; color: inherit; }
 .track { position: relative; height: 22px; background: var(--bg); border-radius: 11px; cursor: pointer; }
 .played { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #1f5a3a, #2b7a50); border-radius: 11px; }
 .half { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--muted); opacity: 0.6; }
-.moment { position: absolute; top: 4px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; border: 2px solid var(--bg); padding: 0; cursor: pointer; }
+.moment { position: absolute; z-index: 1; top: 4px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; border: 2px solid var(--bg); padding: 0; cursor: pointer; }
 .moment.goal { background: var(--goal); }
 .moment.red { background: var(--red); border-radius: 2px; }
 .moment.yellow { background: #f5d547; border-radius: 2px; width: 10px; margin-left: -5px; }
 .moment.sub { background: #6cb4ee; }
 .moment.shift { background: var(--highlight); transform: rotate(45deg); border-radius: 2px; }
+.moment.insight { top: 15px; width: 7px; height: 7px; margin-left: -3.5px; border-width: 1px; background: #b48ef0; z-index: 0; }
 .moment:hover { outline: 2px solid var(--text); }
 .legend { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; color: var(--muted); }
 .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: -1px; }
@@ -111,6 +112,7 @@ button, select { font: inherit; color: inherit; }
 .legend .yellow::before { background: #f5d547; border-radius: 2px; }
 .legend .sub::before { background: #6cb4ee; }
 .legend .shift::before { background: var(--highlight); transform: rotate(45deg); border-radius: 2px; }
+.legend .insight::before { background: #b48ef0; width: 7px; height: 7px; }
 
 /* Phone: pitch full width, side panel below */
 @media (max-width: 860px) {
@@ -164,3 +166,11 @@ button, select { font: inherit; color: inherit; }
 .meter-bar { position: relative; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #5fbf8a, #e8a24f, #e5484d); }
 .meter-bar i { position: absolute; top: -3px; width: 4px; height: 14px; margin-left: -2px; background: var(--text); border-radius: 2px; }
 .meter b { font-family: var(--mono); color: var(--text); font-weight: 500; }
+
+/* LIVE button and the link to start a live match */
+.go-live { display: inline-flex; align-items: center; gap: 6px; color: #fff; background: #c0392b; border-color: #c0392b; font-weight: 600; }
+.go-live i { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: live-pulse 1.2s ease-in-out infinite; }
+@keyframes live-pulse { 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .go-live i { animation: none; } }
+.start-live { font-size: 13px; color: var(--muted); text-decoration: none; align-self: center; }
+.start-live:hover { color: var(--text); text-decoration: underline; }

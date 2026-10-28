@@ -159,6 +159,54 @@ export function captionVoice(viewer: ViewerType, club: Side): CaptionVoice {
   return "casual";
 }
 
+// A goal or card caption that an insight follows gives way after this long, so the agents'
+// expectation written at that moment still gets its full 10 s on screen
+const EVENT_FIRST_MS = 4_000;
+const EVENT_HOLD: Record<string, number> = { goal: 10_000, card: 8_000 };
+
+function headline(e: Replay["events"][number]): "goal" | "card" | null {
+  if (e.type === "shot" && e.outcome === "goal") return "goal";
+  return e.type === "card" ? "card" : null;
+}
+
+// Insights for the same moment take turns: each gets at least this long before the next one
+const INSIGHT_TURN_MS = 6_000;
+const schedules = new WeakMap<object, { events: number; starts: Map<string, number> }>();
+
+/** When each insight starts on screen: after any goal or card caption it lands inside, and
+ *  after the insight before it has had its turn. Cached per insights list (live mode makes a new
+ *  list for every new insight). */
+function insightStarts(r: Replay): Map<string, number> {
+  const ins = r.insights ?? [];
+  const hit = schedules.get(ins);
+  if (hit && hit.events === r.events.length) return hit.starts;
+  const starts = new Map<string, number>();
+  let prev = -Infinity;
+  for (const x of ins) {
+    const start = Math.max(afterHeadline(r, x), prev + INSIGHT_TURN_MS);
+    starts.set(x.insight_id, start);
+    prev = start;
+  }
+  schedules.set(ins, { events: r.events.length, starts });
+  return starts;
+}
+
+function afterHeadline(r: Replay, x: { t: number }): number {
+  let start = x.t;
+  for (let i = lastIndex(r.events, x.t, (e) => e.t); i >= 0 && x.t - r.events[i].t < 10_000; i--) {
+    const h = headline(r.events[i]);
+    if (h && x.t - r.events[i].t < EVENT_HOLD[h]) start = Math.max(start, r.events[i].t + EVENT_FIRST_MS);
+  }
+  return start;
+}
+
+/** How long a goal or card caption holds: shorter when an insight follows inside its window. */
+function eventHold(r: Replay, e: { t: number }, hold: number): number {
+  const ins = r.insights ?? [];
+  const i = lastIndex(ins, e.t + hold - 1, (x) => x.t);
+  return i >= 0 && ins[i].t >= e.t ? Math.min(hold, EVENT_FIRST_MS) : hold;
+}
+
 export function captionAt(r: Replay, t: number, viewer: CaptionVoice = "casual",
                           lang: Language = "en"): Caption | null {
   let best: Caption | null = null;
@@ -171,12 +219,13 @@ export function captionAt(r: Replay, t: number, viewer: CaptionVoice = "casual",
   // Insight Generation captions replace the screen's own trigger captions
   const insights = r.insights ?? [];
   const explained = new Set(insights.map((x) => x.trigger_id));
-  for (let i = lastIndex(insights, t, (x) => x.t); i >= 0 && t - insights[i].t < 12_000; i--) {
+  const starts = insightStarts(r);
+  for (let i = lastIndex(insights, t, (x) => x.t); i >= 0 && t - insights[i].t < 30_000; i--) {
     const x = insights[i];
     const text = x.captions[`${viewer}.${lang}`] ?? x.captions[`${viewer}.en`];
     if (!text) continue;
     const rank = x.evidence.event_ids.length && x.kind === "expect" ? 3.5 : 2.5;
-    consider({ t: x.t, tone: INSIGHT_TONE[x.kind] ?? "info", source: x.insight_id, text,
+    consider({ t: starts.get(x.insight_id) ?? x.t, tone: INSIGHT_TONE[x.kind] ?? "info", source: x.insight_id, text,
                origin: x.caption_source }, 10_000, rank);
   }
   for (let i = lastIndex(r.events, t, (e) => e.t); i >= 0 && t - r.events[i].t < 12_000; i--) {
@@ -184,10 +233,12 @@ export function captionAt(r: Replay, t: number, viewer: CaptionVoice = "casual",
     if (e.type === "shot" && e.outcome === "goal") {
       const [h, a] = scoreAt(r, e.t);
       consider({ t: e.t, tone: "goal", source: e.id, origin: "auto",
-        text: `Goal — ${surname(r, e.player)} for ${clubName(r, e.team)}. ${r.home.name} ${h}–${a} ${r.away.name}` }, 10_000, 4);
+        text: `Goal — ${surname(r, e.player)} for ${clubName(r, e.team)}. ${r.home.name} ${h}–${a} ${r.away.name}` },
+        eventHold(r, e, EVENT_HOLD.goal), 4);
     } else if (e.type === "card") {
       consider({ t: e.t, tone: "card", source: e.id, origin: "auto",
-        text: `${e.outcome === "red" ? "Red" : "Yellow"} card — ${surname(r, e.player)} (${clubName(r, e.team)})` }, 8_000, 3);
+        text: `${e.outcome === "red" ? "Red" : "Yellow"} card — ${surname(r, e.player)} (${clubName(r, e.team)})` },
+        eventHold(r, e, EVENT_HOLD.card), 3);
     } else if (e.type === "sub_on") {
       consider({ t: e.t, tone: "info", source: e.id, origin: "auto",
         text: `Substitution — ${surname(r, e.player)} comes on for ${clubName(r, e.team)}` }, 6_000, 1);

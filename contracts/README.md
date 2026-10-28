@@ -6,7 +6,8 @@ VERSION.md entry in the same commit.
 | Folder | Producer | Status |
 |---|---|---|
 | [`ingestion/`](ingestion/) | Data Ingestion (Lane 1) | **Proposed v1.0.0**, waiting for Lanes 2 and 3 to agree |
-| trigger, overlay cue, MCP tools | Tactical Intelligence, Insight Generation, Metrics | Not yet published |
+| [`broadcast/`](broadcast/) | Performance Metrics → Broadcast, Audience | **v0.2**: documents the cue and `stats` message the engine already sends |
+| trigger, MCP tools | Tactical Intelligence, Insight Generation | Not yet published |
 
 ## Ingestion: clean event and frame (v1.0.0)
 
@@ -72,3 +73,15 @@ doubling. The feed-health notices (`feed_stopped`, `feed_resumed`) have no `peri
 Metrics and Tactical Intelligence run inside the match engine and get merge outputs in-process
 from the router. Other domains don't read ingestion's storage (CLAUDE.md rule 6); they ask the
 owning domain.
+
+## Broadcast: overlay cue and stats message (v0.2)
+
+Generated the same way, from `engine/metrics/models.py` (`Cue`, `StatsMessage`), with
+`python -m engine.contracts`. They describe what the engine already sends on the `stats` hub
+(cues carry message property `type=cue`). External graphics systems can read the same cues from
+the cue manager: `GET /api/matches/{id}/cues` or the Web PubSub group `match-{id}`.
+
+| File | What it is | Consumers |
+|---|---|---|
+| [`cue.schema.json`](broadcast/cue.schema.json) | A number-only overlay cue with its `version`, `status` (`on_air` / `withdrawn`), `reason` and `evidence` | Cue manager, viewer screen, Fabric |
+| [`stats-message.schema.json`](broadcast/stats-message.schema.json) | One `stats` hub message (`positions`, `pass`, `shot`, `xg`, `player_totals`, `heatmap`) | Cue manager, Insight Generation, Fabric |

@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.14.0`**
+**Doc set version: `v2.15.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,19 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.15.0 · 2026-10-27 · Archit
+**Files:** VERSION.md, `contracts/README.md`, `contracts/broadcast/*.schema.json` (also `docs/submission.md`, web, `.github/workflows/version-log.yml`)
+**Type:** MINOR
+- **`contracts/broadcast/` (v0.2):** `cue.schema.json` and `stats-message.schema.json`, generated from `engine/metrics/models.py` by `python -m engine.contracts`. They document what the engine already sends; nothing changes for anyone. `tests/engine/test_contracts.py` now covers both folders.
+- **Viewer:**
+  - every insight now reaches the caption bar (10 were hidden behind goal and card captions, or by another insight at the same moment);
+  - insights are on the timeline;
+  - the URL carries match, moment and view (Copy link);
+  - LIVE button / Start a live match link.
+- **CI:** `version-log.yml` runs the VERSION.md rule on every PR (the pre-commit hook reads `VERSION_CHECK_FILES` when set).
+- `docs/submission.md` results refreshed from `results/RESULTS.md` and the rebuilt replays (v2.14.0).
+- **Action required:** none. Fabric already holds the three storylines on the v2.11.0 simulator.
 
 ## v2.14.0 · 2026-10-27 · Prachit
 **Files:** CLAUDE.md, VERSION.md (code: `sim/control/runner.py`, `tests/sim/test_control.py`, replays, results)

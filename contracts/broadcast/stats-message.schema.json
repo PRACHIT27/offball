@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/PRACHIT27/offball/blob/main/contracts/broadcast/stats-message.schema.json",
+  "version": "0.2",
+  "$defs": {
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "event_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Event Ids",
+          "type": "array"
+        },
+        "frames": {
+          "default": [],
+          "items": {
+            "type": "integer"
+          },
+          "title": "Frames",
+          "type": "array"
+        }
+      },
+      "title": "Evidence",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "One message on the `stats` hub: the fast path to the screen.\n\nBuilt on by: the PubSub bridge and viewer screen (Broadcast, Audience), Fabric Eventstream.",
+  "properties": {
+    "kind": {
+      "enum": [
+        "positions",
+        "player_totals",
+        "heatmap",
+        "pass",
+        "shot",
+        "xg"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "match_id": {
+      "title": "Match Id",
+      "type": "string"
+    },
+    "period": {
+      "title": "Period",
+      "type": "integer"
+    },
+    "match_clock_ms": {
+      "title": "Match Clock Ms",
+      "type": "integer"
+    },
+    "player_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Player Id"
+    },
+    "team_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Team Id"
+    },
+    "version": {
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "status": {
+      "default": "active",
+      "enum": [
+        "active",
+        "deleted"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "values": {
+      "additionalProperties": true,
+      "title": "Values",
+      "type": "object"
+    },
+    "best_option": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Best Option"
+    },
+    "evidence": {
+      "$ref": "#/$defs/Evidence",
+      "default": {
+        "event_ids": [],
+        "frames": []
+      }
+    }
+  },
+  "required": [
+    "kind",
+    "match_id",
+    "period",
+    "match_clock_ms",
+    "values"
+  ],
+  "title": "StatsMessage",
+  "type": "object"
+}
