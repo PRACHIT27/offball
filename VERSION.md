@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.13.0`**
+**Doc set version: `v2.14.0`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,18 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.14.0 · 2026-10-27 · Prachit
+**Files:** CLAUDE.md, VERSION.md (code: `sim/control/runner.py`, `tests/sim/test_control.py`, replays, results)
+**Type:** MINOR
+- **Match control gives every Play its own match ID:** storyline ID, then UTC date and time (`m001-1028-0215`). The ID is swapped into every message's properties and body as it is sent.
+  - Before, replaying a storyline reused `m001`, and the engine dropped the repeat's frames as duplicates. Old events, tactics and cues also mixed in.
+  - Now every service (normalizers, engine, Cosmos, insights, cue manager, viewer, Fabric) sees each run as a new match.
+- Match control is one shared pipeline: anyone's Play reaches everyone's live screen. Say so in the team chat before pressing Play, and press Stop when done (closing the page doesn't stop it).
+- Replays `m001`–`m003` (with agent captions), metrics views and results are rebuilt on the v2.11.0 simulator.
+- **Action required:**
+  - Lane 3 / Fabric: rerun `scripts/fabric_load.py` so the dashboard has the new replays.
+  - `docs/submission.md`: refresh any numbers taken from `results/RESULTS.md`.
 
 ## v2.13.0 · 2026-10-27 · Archit
 **Files:** VERSION.md, `docs/submission.md` (code: `broadcast/`, `scripts/fabric_*.py`, `scripts/deploy_cues.sh`, `web/src/live.ts`, `.vscode/mcp.json`)

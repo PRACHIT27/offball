@@ -53,7 +53,7 @@ def test_play_streams_every_message_once(client):
     assert s["phase"] == "finished", s["message"]
     assert s["sent"]["A"] + s["sent"]["B"] == s["total"]
     assert client.sender.sent == s["sent"]
-    assert s["match_id"] == "m001" and s["minute"] > 45
+    assert s["match_id"].startswith("m001-") and s["minute"] > 45
 
 
 def test_stop_ends_the_run(client):
@@ -68,3 +68,12 @@ def test_bad_requests_are_rejected(client, monkeypatch):
     assert client.post("/api/play", json={"storyline": "red_card", "speed": 30}).status_code == 400
     monkeypatch.setenv("CONTROL_PASSCODE", "pitch")
     assert client.post("/api/play", json={"storyline": "red_card"}).status_code == 401
+
+
+def test_each_play_gets_its_own_match_id(tmp_path):
+    generate(load("red_card", None), tmp_path, "light", period_s=(60.0, 60.0), halftime_s=10)
+    live = control_runner.run_id("m001")
+    schedule = control_runner.plan(tmp_path / "feeds", 10, ("m001", live))
+    assert schedule and all(props["match_id"] == live for _, _, _, props in schedule)
+    assert all('"m001"' not in body for _, _, body, _ in schedule)
+    assert sum(f'"{live}"' in body for _, _, body, _ in schedule) == len(schedule)

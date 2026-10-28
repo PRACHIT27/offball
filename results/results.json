@@ -9,22 +9,22 @@
   },
   "ingestion": {
    "events_recovered_pct": 100.0,
-   "true_events": 1417,
+   "true_events": 1477,
    "extra_events": 0,
    "clock_offset_error_ms": 0,
    "dead_letters": 0,
-   "seconds": 34.3
+   "seconds": 28.4
   },
   "tactics": {
    "true_changes": 7,
-   "found": 3,
-   "false_alarms": 11,
-   "average_lag_s": 198,
-   "triggers": 31,
+   "found": 4,
+   "false_alarms": 13,
+   "average_lag_s": 122,
+   "triggers": 38,
    "trigger_types": {
-    "crux": 7,
-    "shift": 7,
-    "summary": 4,
+    "crux": 6,
+    "shift": 14,
+    "summary": 5,
     "check_in": 6,
     "confirm_due": 5,
     "external": 2
@@ -32,18 +32,18 @@
   },
   "metrics": {
    "players": 24,
-   "distance_error_median_pct": 6.7,
-   "top_speed_within_0_3_pct": 100.0,
-   "sprints_within_2_pct": 16.7,
-   "passes": 1210,
-   "shots": 21,
-   "cues_on_air": 1552,
-   "cues_withdrawn": 11
+   "distance_error_median_pct": 4.1,
+   "top_speed_within_0_3_pct": 83.3,
+   "sprints_within_2_pct": 20.8,
+   "passes": 1231,
+   "shots": 18,
+   "cues_on_air": 1520,
+   "cues_withdrawn": 8
   },
   "engine": {
-   "seconds_per_match": 160.3,
-   "frame_batch_p95_ms": 5.79,
-   "frame_batch_max_ms": 2636.92
+   "seconds_per_match": 163.4,
+   "frame_batch_p95_ms": 5.94,
+   "frame_batch_max_ms": 2983.32
   }
  },
  {
@@ -56,40 +56,41 @@
   },
   "ingestion": {
    "events_recovered_pct": 100.0,
-   "true_events": 1397,
+   "true_events": 1469,
    "extra_events": 0,
-   "clock_offset_error_ms": 40,
+   "clock_offset_error_ms": 0,
    "dead_letters": 0,
-   "seconds": 38.6
+   "seconds": 29.4
   },
   "tactics": {
    "true_changes": 7,
-   "found": 1,
-   "false_alarms": 13,
-   "average_lag_s": 60,
-   "triggers": 32,
+   "found": 4,
+   "false_alarms": 22,
+   "average_lag_s": 185,
+   "triggers": 48,
    "trigger_types": {
-    "crux": 11,
-    "shift": 8,
+    "shift": 19,
+    "summary": 10,
     "check_in": 6,
+    "crux": 6,
     "confirm_due": 6,
     "external": 1
    }
   },
   "metrics": {
    "players": 24,
-   "distance_error_median_pct": 6.0,
-   "top_speed_within_0_3_pct": 100.0,
+   "distance_error_median_pct": 3.9,
+   "top_speed_within_0_3_pct": 95.8,
    "sprints_within_2_pct": 8.3,
-   "passes": 1203,
-   "shots": 16,
-   "cues_on_air": 1655,
-   "cues_withdrawn": 6
+   "passes": 1218,
+   "shots": 36,
+   "cues_on_air": 1670,
+   "cues_withdrawn": 13
   },
   "engine": {
-   "seconds_per_match": 205.7,
-   "frame_batch_p95_ms": 7.97,
-   "frame_batch_max_ms": 2920.28
+   "seconds_per_match": 218.4,
+   "frame_batch_p95_ms": 12.82,
+   "frame_batch_max_ms": 4810.15
   }
  },
  {
@@ -102,41 +103,41 @@
   },
   "ingestion": {
    "events_recovered_pct": 100.0,
-   "true_events": 1618,
+   "true_events": 1591,
    "extra_events": 0,
-   "clock_offset_error_ms": 40,
+   "clock_offset_error_ms": 20,
    "dead_letters": 0,
-   "seconds": 42.1
+   "seconds": 25.0
   },
   "tactics": {
    "true_changes": 4,
    "found": 2,
-   "false_alarms": 9,
-   "average_lag_s": 100,
-   "triggers": 28,
+   "false_alarms": 14,
+   "average_lag_s": 150,
+   "triggers": 36,
    "trigger_types": {
-    "shift": 8,
+    "shift": 12,
+    "summary": 8,
     "check_in": 6,
-    "summary": 3,
-    "crux": 6,
+    "crux": 5,
     "confirm_due": 3,
     "external": 2
    }
   },
   "metrics": {
    "players": 23,
-   "distance_error_median_pct": 6.2,
-   "top_speed_within_0_3_pct": 95.7,
+   "distance_error_median_pct": 4.1,
+   "top_speed_within_0_3_pct": 87.0,
    "sprints_within_2_pct": 8.7,
-   "passes": 1364,
-   "shots": 15,
-   "cues_on_air": 1765,
-   "cues_withdrawn": 12
+   "passes": 1341,
+   "shots": 27,
+   "cues_on_air": 1803,
+   "cues_withdrawn": 14
   },
   "engine": {
-   "seconds_per_match": 206.3,
-   "frame_batch_p95_ms": 7.79,
-   "frame_batch_max_ms": 2528.99
+   "seconds_per_match": 157.4,
+   "frame_batch_p95_ms": 4.72,
+   "frame_batch_max_ms": 2630.82
   }
  },
  {
@@ -149,41 +150,41 @@
   },
   "ingestion": {
    "events_recovered_pct": 100.0,
-   "true_events": 1437,
+   "true_events": 1429,
    "extra_events": 0,
    "clock_offset_error_ms": 40,
    "dead_letters": 0,
-   "seconds": 45.1
+   "seconds": 28.2
   },
   "tactics": {
    "true_changes": 6,
-   "found": 4,
-   "false_alarms": 13,
-   "average_lag_s": 227,
-   "triggers": 33,
+   "found": 3,
+   "false_alarms": 16,
+   "average_lag_s": 173,
+   "triggers": 42,
    "trigger_types": {
     "crux": 9,
-    "shift": 12,
+    "shift": 13,
+    "summary": 9,
     "check_in": 6,
     "confirm_due": 4,
-    "summary": 1,
     "external": 1
    }
   },
   "metrics": {
    "players": 23,
-   "distance_error_median_pct": 5.8,
-   "top_speed_within_0_3_pct": 100.0,
-   "sprints_within_2_pct": 4.3,
-   "passes": 1224,
-   "shots": 24,
-   "cues_on_air": 1647,
+   "distance_error_median_pct": 4.3,
+   "top_speed_within_0_3_pct": 87.0,
+   "sprints_within_2_pct": 8.7,
+   "passes": 1205,
+   "shots": 25,
+   "cues_on_air": 1635,
    "cues_withdrawn": 14
   },
   "engine": {
-   "seconds_per_match": 165.3,
-   "frame_batch_p95_ms": 6.39,
-   "frame_batch_max_ms": 2705.65
+   "seconds_per_match": 129.9,
+   "frame_batch_p95_ms": 4.34,
+   "frame_batch_max_ms": 2693.04
   }
  },
  {
@@ -196,41 +197,41 @@
   },
   "ingestion": {
    "events_recovered_pct": 100.0,
-   "true_events": 1571,
+   "true_events": 1653,
    "extra_events": 0,
-   "clock_offset_error_ms": 20,
+   "clock_offset_error_ms": 0,
    "dead_letters": 0,
-   "seconds": 30.3
+   "seconds": 33.1
   },
   "tactics": {
    "true_changes": 9,
-   "found": 2,
-   "false_alarms": 7,
-   "average_lag_s": 185,
-   "triggers": 29,
+   "found": 0,
+   "false_alarms": 14,
+   "average_lag_s": null,
+   "triggers": 32,
    "trigger_types": {
-    "crux": 6,
     "shift": 9,
+    "summary": 4,
     "check_in": 6,
+    "crux": 8,
     "confirm_due": 4,
-    "summary": 3,
     "external": 1
    }
   },
   "metrics": {
    "players": 23,
-   "distance_error_median_pct": 6.7,
+   "distance_error_median_pct": 4.3,
    "top_speed_within_0_3_pct": 91.3,
    "sprints_within_2_pct": 13.0,
-   "passes": 1338,
-   "shots": 17,
-   "cues_on_air": 1662,
-   "cues_withdrawn": 7
+   "passes": 1363,
+   "shots": 8,
+   "cues_on_air": 1675,
+   "cues_withdrawn": 13
   },
   "engine": {
-   "seconds_per_match": 170.0,
-   "frame_batch_p95_ms": 6.66,
-   "frame_batch_max_ms": 2648.32
+   "seconds_per_match": 290.6,
+   "frame_batch_p95_ms": 14.08,
+   "frame_batch_max_ms": 34530.52
   }
  },
  {
@@ -243,41 +244,41 @@
   },
   "ingestion": {
    "events_recovered_pct": 100.0,
-   "true_events": 1548,
+   "true_events": 1602,
    "extra_events": 0,
-   "clock_offset_error_ms": 20,
+   "clock_offset_error_ms": 0,
    "dead_letters": 0,
-   "seconds": 28.2
+   "seconds": 25.1
   },
   "tactics": {
    "true_changes": 4,
-   "found": 2,
-   "false_alarms": 14,
-   "average_lag_s": 140,
-   "triggers": 29,
+   "found": 1,
+   "false_alarms": 20,
+   "average_lag_s": 350,
+   "triggers": 33,
    "trigger_types": {
     "crux": 5,
     "shift": 9,
-    "summary": 3,
     "external": 4,
     "check_in": 6,
+    "summary": 7,
     "confirm_due": 2
    }
   },
   "metrics": {
    "players": 23,
-   "distance_error_median_pct": 6.5,
-   "top_speed_within_0_3_pct": 87.0,
+   "distance_error_median_pct": 4.2,
+   "top_speed_within_0_3_pct": 78.3,
    "sprints_within_2_pct": 13.0,
-   "passes": 1361,
-   "shots": 16,
-   "cues_on_air": 1683,
-   "cues_withdrawn": 10
+   "passes": 1344,
+   "shots": 19,
+   "cues_on_air": 1712,
+   "cues_withdrawn": 9
   },
   "engine": {
-   "seconds_per_match": 161.7,
-   "frame_batch_p95_ms": 5.84,
-   "frame_batch_max_ms": 2986.97
+   "seconds_per_match": 160.8,
+   "frame_batch_p95_ms": 4.74,
+   "frame_batch_max_ms": 2814.81
   }
  }
 ]

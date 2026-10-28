@@ -45,11 +45,23 @@ def prepare(storyline: str, seed: int | None, mess: str) -> tuple[Path, dict]:
     return out / "feeds", json.loads(meta_path.read_text())
 
 
-def plan(feeds_dir: Path, speed: float) -> list[tuple[float, str, str, dict]]:
+def run_id(match_id: str) -> str:
+    return f"{match_id}-{time.strftime('%m%d-%H%M%S', time.gmtime())}"
+
+
+def plan(feeds_dir: Path, speed: float, rename: tuple[str, str] | None = None
+         ) -> list[tuple[float, str, str, dict]]:
     msgs = list(messages(feeds_dir))
     kickoff = next(m.wall_ms for m in msgs if m.feed == "B")
-    return [(max(0.0, (m.wall_ms - kickoff) / 1000 / speed), m.feed, m.body, m.properties)
-            for m in msgs]
+    old, new = (f'"{rename[0]}"', f'"{rename[1]}"') if rename else (None, None)
+    out = []
+    for m in msgs:
+        body, props = m.body, m.properties
+        if rename:
+            body = body.replace(old, new)
+            props = {**props, "match_id": rename[1]}
+        out.append((max(0.0, (m.wall_ms - kickoff) / 1000 / speed), m.feed, body, props))
+    return out
 
 
 def clock_of(body: str) -> tuple[int, float] | None:
@@ -111,8 +123,9 @@ class Runner:
         sender: Sender | None = None
         try:
             feeds, meta = prepare(storyline, seed, mess)
-            schedule = plan(feeds, speed)
-            self._set(match_id=meta["match_id"], home=meta["home"], away=meta["away"],
+            live_id = run_id(meta["match_id"])
+            schedule = plan(feeds, speed, (meta["match_id"], live_id))
+            self._set(match_id=live_id, home=meta["home"], away=meta["away"],
                       total=len(schedule), phase="streaming", message="Streaming to the pipeline")
             sender = self.sender_factory()
             start = time.monotonic()

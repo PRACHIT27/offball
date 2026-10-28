@@ -4,14 +4,14 @@
 
 | Storyline | Events recovered | Clock offset error | Tactic changes found | False alarms | Avg lag | Distance error (median) | Top speed ±0.3 m/s | Sprints ±2 | Engine p95 per batch |
 |---|---|---|---|---|---|---|---|---|---|
-| red_card | 100.0% | 0 ms | 3 of 7 | 11 | 198 s | 6.7% | 100.0% | 16.7% | 5.79 ms |
-| comeback | 100.0% | 40 ms | 1 of 7 | 13 | 60 s | 6.0% | 100.0% | 8.3% | 7.97 ms |
-| switch | 100.0% | 40 ms | 2 of 4 | 9 | 100 s | 6.2% | 95.7% | 8.7% | 7.79 ms |
-| late_drama | 100.0% | 40 ms | 4 of 6 | 13 | 227 s | 5.8% | 100.0% | 4.3% | 6.39 ms |
-| press_fade | 100.0% | 20 ms | 2 of 9 | 7 | 185 s | 6.7% | 91.3% | 13.0% | 6.66 ms |
-| storm | 100.0% | 20 ms | 2 of 4 | 14 | 140 s | 6.5% | 87.0% | 13.0% | 5.84 ms |
+| red_card | 100.0% | 0 ms | 4 of 7 | 13 | 122 s | 4.1% | 83.3% | 20.8% | 5.94 ms |
+| comeback | 100.0% | 0 ms | 4 of 7 | 22 | 185 s | 3.9% | 95.8% | 8.3% | 12.82 ms |
+| switch | 100.0% | 20 ms | 2 of 4 | 14 | 150 s | 4.1% | 87.0% | 8.7% | 4.72 ms |
+| late_drama | 100.0% | 40 ms | 3 of 6 | 16 | 173 s | 4.3% | 87.0% | 8.7% | 4.34 ms |
+| press_fade | 100.0% | 0 ms | 0 of 9 | 14 | – | 4.3% | 91.3% | 13.0% | 14.08 ms |
+| storm | 100.0% | 0 ms | 1 of 4 | 20 | 350 s | 4.2% | 78.3% | 13.0% | 4.74 ms |
 
 **Totals:**
-- Tactic changes detected: **14 of 37** (38%), 67 false alarms.
+- Tactic changes detected: **14 of 37** (38%), 99 false alarms.
 - Events recovered from the messy feeds: **100.0%** on average.
-- Triggers raised for the agents: 182.
+- Triggers raised for the agents: 229.
