@@ -4,6 +4,8 @@ Inside the Game: Developer Hackathon (Microsoft × Premier League). Everything h
 fictional clubs (Riverside Athletic, Northgate United, Kestrel Vale), fictional players, simulated
 matches.
 
+**Demo video (under 2 minutes):** https://youtu.be/xfnb7fFuq_Q
+
 ## Try it (no login needed)
 
 | What | Link |

@@ -8,7 +8,7 @@
 
 ## Try it (judges, start here)
 
-**Demo video (under 2 minutes):** _link to be added_
+**Demo video (under 2 minutes):** https://youtu.be/xfnb7fFuq_Q
 
 **What's different:** broadcasts explain the ball; OffBall explains the game off the ball. From
 tracking positions it finds decoy runs (who ran, which defenders followed, who got free) and the

@@ -6,7 +6,7 @@ gets an entry here, in the same commit. A `pre-commit` hook enforces it.
 Why: three people work with separate Claude Code sessions that cannot see each other. This file is
 how a session finds out that a design or contract moved since it last looked.
 
-**Doc set version: `v2.17.1`**
+**Doc set version: `v2.17.2`**
 **Design status:** HLD draft · LLDs approved: Match Simulation, Data Ingestion, Performance Metrics, Tactical Intelligence, Insight Generation, Broadcast, Audience, Platform (all eight domains)
 
 ---
@@ -35,6 +35,11 @@ Enable once per clone: `git config core.hooksPath .githooks`. Emergency bypass:
 ---
 
 ## Log
+
+## v2.17.2 · 2026-10-28 · Prachit
+**Files:** README.md, VERSION.md, `docs/submission.md`
+**Type:** PATCH
+- Demo video link added: https://youtu.be/xfnb7fFuq_Q
 
 ## v2.17.1 · 2026-10-28 · Prachit
 **Files:** README.md, VERSION.md
