@@ -28,7 +28,7 @@ from pathlib import Path
 from aiohttp import ClientSession, ClientTimeout, web
 
 from broadcast.cues import MatchCues
-from broadcast.fabric import KustoSink
+from broadcast.fabric import KustoSink, match_row
 from broadcast.fabric import rows as fabric_rows
 
 log = logging.getLogger("offball.cues")
@@ -48,6 +48,7 @@ class CueService:
         self.pubsub = pubsub
         # Optional broadcast.fabric.KustoSink: the same messages into the Fabric Eventhouse
         self.fabric = fabric
+        self.fabric_listed: set[str] = set()
         self.cosmos = cosmos
         self.insights_url = insights_url.rstrip("/") if insights_url else None
         self.passcode = passcode
@@ -84,6 +85,10 @@ class CueService:
         if self.fabric is not None:
             at = props.get("emitted_at") or datetime.now(UTC).isoformat()
             self.fabric.extend(fabric_rows(at, body, props))
+            if m.prematch and match_id not in self.fabric_listed:
+                # One Matches row, so the dashboard's match picker lists the live match
+                self.fabric_listed.add(match_id)
+                self.fabric.add("Matches", match_row(match_id, m.prematch, at))
 
     async def load_prematch(self, m: MatchCues) -> None:
         try:

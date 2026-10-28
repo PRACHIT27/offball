@@ -100,10 +100,22 @@ class LiveBuilder {
       }
       case "stats": {
         const d = env.data;
-        if (d.kind === "shot" && d.status !== "deleted") {
-          if (d.values.outcome === "goal") {
-            this.replay.events.push({ id: d.evidence.event_ids[0], t: env.t, type: "shot", period: d.period,
-              clock: d.match_clock_ms, team: d.team_id, player: d.player_id, outcome: "goal", target: null });
+        if (d.kind === "shot") {
+          // A corrected shot replaces the earlier version; a deleted one goes
+          const id = d.evidence.event_ids[0];
+          this.replay.events = this.replay.events.filter((e) => e.id !== id);
+          this.metrics.shots = this.metrics.shots.filter((s) => s.id !== id);
+          if (d.status !== "deleted") {
+            this.replay.events.push({ id, t: env.t, type: "shot", period: d.period, clock: d.match_clock_ms,
+              team: d.team_id, player: d.player_id, outcome: d.values.outcome, target: null });
+            this.replay.events.sort((x, y) => x.t - y.t);
+            // The shot message has no location: the shooter's tracked position in the newest frame
+            const f = this.replay.frames[this.replay.frames.length - 1];
+            const c = this.col.get(d.player_id);
+            const at = f && c !== undefined && f[5][2 * c] >= 0 ? [f[5][2 * c] / 10, f[5][2 * c + 1] / 10] : null;
+            this.metrics.shots.push({ t: env.t, id, team: d.team_id, player: d.player_id,
+              x: at ? at[0] : null, y: at ? at[1] : null, xg: d.values.xg ?? null,
+              speed_kmh: d.values.speed_kmh ?? null, outcome: d.values.outcome });
           }
         } else if (d.kind === "xg") {
           this.replay.xg.push({ t: env.t, team: d.team_id, ...d.values });

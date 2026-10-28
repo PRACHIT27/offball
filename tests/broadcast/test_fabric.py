@@ -56,3 +56,17 @@ def test_cue_manager_copies_messages_to_fabric_without_sending():
         return sink.buffers
     buffers = asyncio.run(go())
     assert list(buffers) == ["Cues"] and AT in buffers["Cues"][0]
+
+
+def test_live_match_gets_one_matches_row_once_prematch_is_known():
+    async def go():
+        sink = KustoSink("https://example.kusto.fabric.microsoft.com", None, None)
+        svc = CueService(fabric=sink)
+        svc.match("m1").prematch = {"home": {"club_id": "RIV", "name": "Riverside Athletic"},
+                                    "away": {"club_id": "NGU", "name": "Northgate United"}}
+        for _ in range(2):
+            await svc.on_event(None, FakeEvent(cue(), {"type": "cue", "match_id": "m1",
+                                                       "emitted_at": AT}))
+        return sink.buffers
+    buffers = asyncio.run(go())
+    assert len(buffers["Matches"]) == 1 and "Riverside Athletic" in buffers["Matches"][0]
