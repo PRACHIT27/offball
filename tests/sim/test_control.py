@@ -77,3 +77,9 @@ def test_each_play_gets_its_own_match_id(tmp_path):
     assert schedule and all(props["match_id"] == live for _, _, _, props in schedule)
     assert all('"m001"' not in body for _, _, body, _ in schedule)
     assert sum(f'"{live}"' in body for _, _, body, _ in schedule) == len(schedule)
+
+
+def test_status_links_to_the_viewer_when_configured(client, monkeypatch):
+    assert client.get("/api/status").json()["viewer_url"] is None
+    monkeypatch.setenv("VIEWER_URL", "https://viewer.example/")
+    assert client.get("/api/status").json()["viewer_url"] == "https://viewer.example"
