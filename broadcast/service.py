@@ -8,6 +8,8 @@
 - `/api/matches`, `/api/matches/{id}/state` (late joiners), `/api/matches/{id}/cues` and
   `POST /api/cues/{id}/pull` (producer, needs PRODUCER_PASSCODE; refused when it is unset).
 - `/producer`: the producer console. `/health`: counts.
+- With FABRIC_KUSTO_URI set, the same messages and every producer pull also stream into the
+  Fabric Eventhouse for the Real-Time Dashboard (broadcast/fabric.py).
 
 Keyless: DefaultAzureCredential (the Container App's identity `id-cues`, AZURE_CLIENT_ID).
 
@@ -20,11 +22,14 @@ import json
 import logging
 import os
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 from aiohttp import ClientSession, ClientTimeout, web
 
 from broadcast.cues import MatchCues
+from broadcast.fabric import KustoSink
+from broadcast.fabric import rows as fabric_rows
 
 log = logging.getLogger("offball.cues")
 HUB = "offball"
@@ -39,8 +44,10 @@ def group(match_id: str) -> str:
 
 class CueService:
     def __init__(self, pubsub=None, cosmos=None, insights_url: str | None = None,
-                 passcode: str | None = None) -> None:
+                 passcode: str | None = None, fabric=None) -> None:
         self.pubsub = pubsub
+        # Optional broadcast.fabric.KustoSink: the same messages into the Fabric Eventhouse
+        self.fabric = fabric
         self.cosmos = cosmos
         self.insights_url = insights_url.rstrip("/") if insights_url else None
         self.passcode = passcode
@@ -74,6 +81,9 @@ class CueService:
         if m.prematch is None and self.cosmos is not None:
             await self.load_prematch(m)
         self.publish(match_id, m.on_stats(body, props))
+        if self.fabric is not None:
+            at = props.get("emitted_at") or datetime.now(UTC).isoformat()
+            self.fabric.extend(fabric_rows(at, body, props))
 
     async def load_prematch(self, m: MatchCues) -> None:
         try:
@@ -146,6 +156,8 @@ class CueService:
         return web.json_response({"up_s": round(time.time() - self.started), **self.counts,
                                   "outbox": self.outbox.qsize(), "insights_ok": self.insights_ok,
                                   "pubsub": self.pubsub is not None,
+                                  "fabric": None if self.fabric is None else
+                                  {"sent": self.fabric.sent, "failed": self.fabric.failed},
                                   "matches": [m.summary() for m in self.matches.values()]})
 
     async def console(self, request: web.Request) -> web.Response:
@@ -190,6 +202,9 @@ class CueService:
         if env is None:
             raise web.HTTPConflict(text="no such cue on air")
         self.publish(m.match_id, [env])
+        if self.fabric is not None:
+            self.fabric.extend(fabric_rows(datetime.now(UTC).isoformat(), env["cue"],
+                                           {"type": "cue"}))
         log.info("producer pull %s %s", m.match_id, request.match_info["cue_id"])
         return web.json_response(env["cue"])
 
@@ -224,8 +239,11 @@ async def run() -> None:
             if os.environ.get("COSMOS_ENDPOINT") else None
         cosmos = (cosmos_client.get_database_client("offball").get_container_client("events")
                   if cosmos_client else None)
+        http = ClientSession(timeout=ClientTimeout(total=30))
+        fabric = KustoSink(os.environ["FABRIC_KUSTO_URI"], cred, http) \
+            if os.environ.get("FABRIC_KUSTO_URI") else None
         svc = CueService(pubsub, cosmos, os.environ.get("INSIGHTS_URL"),
-                         os.environ.get("PRODUCER_PASSCODE") or None)
+                         os.environ.get("PRODUCER_PASSCODE") or None, fabric)
         hub = EventHubConsumerClient(os.environ["EVENTHUB_NAMESPACE"], "cues",
                                      eventhub_name="stats", credential=cred)
         runner = web.AppRunner(svc.app())
@@ -233,6 +251,8 @@ async def run() -> None:
         await web.TCPSite(runner, "0.0.0.0", int(os.environ.get("PORT", "8080"))).start()
         log.info("cue manager up: stats (group cues) -> Web PubSub hub %s", HUB)
         tasks = [asyncio.create_task(svc.sender()), asyncio.create_task(svc.poll_insights())]
+        if fabric:
+            tasks.append(asyncio.create_task(fabric.run()))
         try:
             async with hub:
                 # Only from now: a restart rebuilds live matches from new messages
@@ -241,6 +261,7 @@ async def run() -> None:
             for task in tasks:
                 task.cancel()
             await pubsub.close()
+            await http.close()
             if cosmos_client:
                 await cosmos_client.close()
 

@@ -21,6 +21,8 @@ IMAGE="$ACR.azurecr.io/offball-cues:$TAG"
 SUB=$(az account show --query id -o tsv)
 SCREEN_ORIGIN=${SCREEN_ORIGIN:-https://jolly-cliff-0ccede51e.4.azurestaticapps.net}
 INSIGHTS_URL=${INSIGHTS_URL:-https://offball-insights.whitemoss-2f18829c.westus2.azurecontainerapps.io}
+# Fabric Eventhouse for the Real-Time Dashboard (scripts/fabric_dashboard.py prints it); "" turns it off
+FABRIC_KUSTO_URI=${FABRIC_KUSTO_URI-https://trd-2femkkugfffmm8qyfq.z6.kusto.fabric.microsoft.com}
 
 echo "== Web PubSub $WPS (Standard S1: Free allows 20k messages a day, a live match sends ~27k per viewer)"
 az provider register --namespace Microsoft.SignalRService --wait
@@ -49,6 +51,14 @@ if [ -z "$(az cosmosdb sql role assignment list -g "$RG" -a "$COSMOS" --query "[
 fi
 az eventhubs eventhub consumer-group show -g "$RG" --namespace-name "$EH" --eventhub-name stats -n cues -o none 2>/dev/null || \
   az eventhubs eventhub consumer-group create -g "$RG" --namespace-name "$EH" --eventhub-name stats -n cues -o none
+
+if [ -n "$FABRIC_KUSTO_URI" ]; then
+  echo "== Fabric: id-cues may ingest into KQL database offball (ingestor only)"
+  TENANT=$(az account show --query tenantId -o tsv)
+  az rest --method post --url "$FABRIC_KUSTO_URI/v1/rest/mgmt" --resource "$FABRIC_KUSTO_URI" \
+    --body "{\"db\": \"offball\", \"csl\": \".add database offball ingestors ('aadapp=$ID_CLIENT;$TENANT') 'offball-cues'\"}" \
+    -o none || echo "   (could not add the ingestor; the cue manager runs without Fabric)"
+fi
 
 echo "== build and push $IMAGE"
 docker build --platform linux/amd64 -f Dockerfile.cues -t "$IMAGE" .
@@ -88,6 +98,7 @@ body = {
           {"name": "WEBPUBSUB_ENDPOINT", "value": "$WPS_EP"},
           {"name": "INSIGHTS_URL", "value": "$INSIGHTS_URL"},
           {"name": "ALLOWED_ORIGINS", "value": "$SCREEN_ORIGIN"},
+          {"name": "FABRIC_KUSTO_URI", "value": "$FABRIC_KUSTO_URI"},
           {"name": "PRODUCER_PASSCODE", "secretRef": "producer-passcode"},
           {"name": "DEPLOYED_AT", "value": "$(date -u +%Y%m%dT%H%M%SZ)"},
         ],
